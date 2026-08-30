@@ -29,8 +29,8 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ studentToEdit,
   const [parentName, setParentName] = useState(studentToEdit?.parentName || '');
   const [parentPhone, setParentPhone] = useState(studentToEdit?.parentPhone || '');
   const [parentRelationship, setParentRelationship] = useState(studentToEdit?.parentRelationship || 'Veli');
-  const [lessonFee, setLessonFee] = useState<number>(studentToEdit?.lessonFee ?? teacher.defaultLessonFee ?? teacher.defaultHourlyRate ?? 800);
-  const [lessonDuration, setLessonDuration] = useState<number>(studentToEdit?.lessonDuration ?? teacher.defaultLessonDuration ?? 60);
+  const [lessonFee, setLessonFee] = useState<string>(studentToEdit ? String(studentToEdit.lessonFee) : '');
+  const [lessonDuration, setLessonDuration] = useState<string>(studentToEdit ? String(studentToEdit.lessonDuration) : '');
   const [feeType, setFeeType] = useState<FeeType>(studentToEdit?.feeType || 'Ders Başı');
   const [lessonType, setLessonType] = useState<LessonType>(studentToEdit?.lessonType || 'Birebir');
   const [academicGoal, setAcademicGoal] = useState(studentToEdit?.academicGoal || '');
@@ -58,8 +58,10 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ studentToEdit,
       setError('Öğrenci telefon numarası geçerli görünmüyor.');
       return;
     }
-    if (lessonFee < 0 || lessonDuration <= 0) {
-      setError('Ders ücreti ve ders süresi geçerli olmalıdır.');
+    const parsedLessonFee = Number(lessonFee);
+    const parsedLessonDuration = Number(lessonDuration);
+    if (!lessonFee.trim() || !lessonDuration.trim() || !Number.isFinite(parsedLessonFee) || parsedLessonFee < 0 || !Number.isFinite(parsedLessonDuration) || parsedLessonDuration <= 0) {
+      setError('Ders ücreti ve varsayılan ders süresini giriniz.');
       return;
     }
 
@@ -75,8 +77,8 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ studentToEdit,
       parentName: parentName.trim(),
       parentPhone: parentPhone.trim(),
       parentRelationship: parentRelationship.trim() || 'Veli',
-      lessonFee: Number(lessonFee),
-      lessonDuration: Number(lessonDuration),
+      lessonFee: parsedLessonFee,
+      lessonDuration: parsedLessonDuration,
       feeType,
       academicGoal: academicGoal.trim(),
       lessonType,
@@ -130,8 +132,8 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ studentToEdit,
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div><label className="text-xs font-bold">Ücret Tipi</label><select value={feeType} onChange={e=>setFeeType(e.target.value as FeeType)} className={inputClass}>{feeTypeOptions.map(x=><option key={x}>{x}</option>)}</select></div>
-            <div><label className="text-xs font-bold">Ders Ücreti (₺)</label><input type="number" min="0" value={lessonFee} onChange={e=>setLessonFee(Number(e.target.value))} className={inputClass} /></div>
-            <div><label className="text-xs font-bold">Varsayılan Süre</label><input type="number" min="15" step="5" value={lessonDuration} onChange={e=>setLessonDuration(Number(e.target.value))} className={inputClass} /></div>
+            <div><label className="text-xs font-bold">Ders Ücreti (₺)</label><input type="number" min="0" value={lessonFee} onChange={e=>setLessonFee(e.target.value)} placeholder="Tutarı girin" className={inputClass} /></div>
+            <div><label className="text-xs font-bold">Varsayılan Süre</label><input type="number" min="15" step="5" value={lessonDuration} onChange={e=>setLessonDuration(e.target.value)} placeholder="Süreyi girin" className={inputClass} /></div>
             <div><label className="text-xs font-bold">Ders Türü</label><select value={lessonType} onChange={e=>setLessonType(e.target.value as LessonType)} className={inputClass}>{lessonTypeOptions.map(x=><option key={x}>{x}</option>)}</select></div>
           </div>
 

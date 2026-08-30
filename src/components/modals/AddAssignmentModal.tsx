@@ -31,7 +31,7 @@ export const AddAssignmentModal: React.FC<AddAssignmentModalProps> = ({
   const [resourceName, setResourceName] = useState('');
   const [pages, setPages] = useState('');
   const [questionNumbers, setQuestionNumbers] = useState('');
-  const [questionCount, setQuestionCount] = useState(0);
+  const [questionCount, setQuestionCount] = useState('');
 
   const defaultDueDate = new Date();
   defaultDueDate.setDate(defaultDueDate.getDate() + 7);
@@ -46,7 +46,8 @@ export const AddAssignmentModal: React.FC<AddAssignmentModalProps> = ({
     if (!resourceName.trim()) { setError('Kaynak adı zorunludur.'); return; }
     if (!dueDate) { setError('Teslim tarihi zorunludur.'); return; }
     if (dueDate < toLocalDateInputValue()) { setError('Teslim tarihi bugünden önce olamaz.'); return; }
-    if (questionCount < 0) { setError('Soru sayısı negatif olamaz.'); return; }
+    const parsedQuestionCount = questionCount.trim() === '' ? undefined : Number(questionCount);
+    if (parsedQuestionCount !== undefined && (!Number.isFinite(parsedQuestionCount) || parsedQuestionCount < 0)) { setError('Soru sayısı geçerli bir sayı olmalıdır.'); return; }
 
     addAssignment({
       studentId,
@@ -55,7 +56,7 @@ export const AddAssignmentModal: React.FC<AddAssignmentModalProps> = ({
       resourceName,
       pages,
       questionNumbers,
-      questionCount: Number(questionCount) || 0,
+      questionCount: parsedQuestionCount,
       assignedDate: toLocalDateInputValue(),
       dueDate,
       priority: 'Normal',
@@ -191,7 +192,9 @@ export const AddAssignmentModal: React.FC<AddAssignmentModalProps> = ({
               <input
                 type="number"
                 value={questionCount}
-                onChange={(e) => setQuestionCount(Number(e.target.value))}
+                onChange={(e) => setQuestionCount(e.target.value)}
+                min="0"
+                placeholder="Elle girin"
                 className="w-full text-xs p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none"
               />
             </div>

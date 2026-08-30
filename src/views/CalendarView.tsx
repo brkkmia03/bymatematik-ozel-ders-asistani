@@ -29,7 +29,7 @@ const toLocalDateKey = (date: Date) => {
 };
 
 export const CalendarView: React.FC = () => {
-  const { students, lessons, openModal, startLiveLesson, updateLesson, cancelLesson, deleteLesson } = useApp();
+  const { students, lessons, openModal, updateLesson, cancelLesson, deleteLesson } = useApp();
 
   const [viewMode, setViewMode] = useState<'weekly' | 'daily' | 'monthly' | 'list'>('weekly');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -325,14 +325,11 @@ export const CalendarView: React.FC = () => {
                             >
                               <Sparkles className="w-3.5 h-3.5" />
                             </button>
-                            {!isCompleted && (
+                            {lesson.status === 'Başladı' && (
                               <button
-                                onClick={() => {
-                                  startLiveLesson(lesson.id);
-                                  openModal('liveLesson', { lesson, student });
-                                }}
+                                onClick={() => openModal('liveLesson', { lesson, student })}
                                 className="p-1 text-emerald-600 hover:text-emerald-700"
-                                title="Dersi Başlat"
+                                title="Canlı Dersi Aç"
                               >
                                 <Play className="w-3.5 h-3.5" />
                               </button>
@@ -437,16 +434,17 @@ export const CalendarView: React.FC = () => {
                     <button onClick={() => handleDeleteLesson(lesson)} className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-700 dark:border-rose-900 dark:text-rose-300 font-semibold">
                       Sil
                     </button>
-                    {!['Tamamlandı', 'İptal Edildi', 'Öğretmen İptal Etti'].includes(lesson.status) ? (
+                    {lesson.status === 'Başladı' ? (
                       <button
-                        onClick={() => {
-                          startLiveLesson(lesson.id);
-                          openModal('liveLesson', { lesson, student });
-                        }}
-                        className="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-bold"
+                        onClick={() => openModal('liveLesson', { lesson, student })}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white font-bold"
                       >
-                        Başlat
+                        Canlı Ders
                       </button>
+                    ) : ['Planlandı', 'Yaklaşıyor'].includes(lesson.status) ? (
+                      <span className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 rounded-xl font-bold border border-indigo-100 dark:border-indigo-900">
+                        Saatinde otomatik başlayacak
+                      </span>
                     ) : (
                       <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-xl font-bold">
                         {lesson.status}

@@ -44,7 +44,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     tasks,
     updateTaskStatus,
     openModal,
-    startLiveLesson,
     activeLessonId,
   } = useApp();
 
@@ -58,13 +57,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   // Determine the next upcoming lesson (live first, or first pending, or first today, or fallback)
-  const liveLesson = lessons.find((l) => l.id === activeLessonId);
+  const liveLesson = lessons.find((l) => l.id === activeLessonId && l.status === 'Başladı');
+  const hasLiveLesson = Boolean(liveLesson);
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const nextPendingLesson = todayLessons.find((l) => {
     if (!['Planlandı', 'Yaklaşıyor'].includes(l.status)) return false;
     const [h, m] = l.startTime.split(':').map(Number);
     return h * 60 + m >= currentMinutes;
-  }) || todayLessons.find((l) => ['Planlandı', 'Yaklaşıyor'].includes(l.status));
+  });
   // The hero must never contradict the 'Bugünün Dersleri' list. If today's next lesson
   // has already passed or has a non-pending status, still show today's first real lesson.
   const primaryHeroLesson = liveLesson || nextPendingLesson || todayLessons[0] || null;
@@ -256,7 +256,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               const student = students.find((s) => s.id === lesson.studentId);
               const isCancelled = ['İptal Edildi', 'Öğretmen İptal Etti'].includes(lesson.status);
               const isCompleted = lesson.status === 'Tamamlandı';
-              const isLive = activeLessonId === lesson.id;
+              const isLive = activeLessonId === lesson.id && lesson.status === 'Başladı';
 
               return (
                 <div
@@ -330,7 +330,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             {/* Bento Card Top Bar */}
             <div className="flex justify-between items-start mb-5">
               <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-bold tracking-wide">
-                {activeLessonId ? '🔴 CANLI DERS DEVAM EDİYOR' : 'SIRADAKİ DERS'}
+                {hasLiveLesson
+                  ? '🔴 CANLI DERS DEVAM EDİYOR'
+                  : primaryHeroLesson?.status === 'Tamamlandı'
+                  ? '✓ BUGÜN TAMAMLANAN DERS'
+                  : 'SIRADAKİ DERS'}
               </span>
               <span className="text-slate-400 text-xs font-semibold font-mono">
                 {primaryHeroLesson ? `${primaryHeroLesson.startTime} (${primaryHeroLesson.duration} dk)` : 'Plan Yok'}
@@ -400,20 +404,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           {/* Action Buttons */}
           {primaryHeroLesson && heroStudent ? (
             <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={() => {
-                  if (activeLessonId === primaryHeroLesson.id) {
-                    openModal('liveLesson', { lesson: primaryHeroLesson, student: heroStudent });
-                  } else {
-                    startLiveLesson(primaryHeroLesson.id);
-                    openModal('liveLesson', { lesson: primaryHeroLesson, student: heroStudent });
-                  }
-                }}
-                className="flex-1 py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2 active:scale-98"
-              >
-                <Play className="w-4 h-4 fill-current" />
-                <span>{activeLessonId === primaryHeroLesson.id ? 'Canlı Derse Dön' : 'Dersi Başlat'}</span>
-              </button>
+              {primaryHeroLesson.status === 'Başladı' ? (
+                <button
+                  onClick={() => openModal('liveLesson', { lesson: primaryHeroLesson, student: heroStudent })}
+                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2 active:scale-98"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Canlı Derse Dön</span>
+                </button>
+              ) : ['Planlandı', 'Yaklaşıyor'].includes(primaryHeroLesson.status) ? (
+                <div className="flex-1 py-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/60 rounded-xl font-bold text-sm text-center">
+                  ⏱️ Ders saatinde otomatik başlayacak
+                </div>
+              ) : (
+                <div className="flex-1 py-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/60 rounded-xl font-bold text-sm text-center">
+                  {primaryHeroLesson.status}
+                </div>
+              )}
 
               <button
                 onClick={() =>
@@ -625,7 +632,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               todayLessons.slice(0, 3).map((lesson) => {
                 const s = students.find((st) => st.id === lesson.studentId);
                 const isCompleted = lesson.status === 'Tamamlandı';
-                const isLive = activeLessonId === lesson.id;
+                const isLive = activeLessonId === lesson.id && lesson.status === 'Başladı';
 
                 return (
                   <div key={lesson.id} className="flex items-center gap-3 text-sm">

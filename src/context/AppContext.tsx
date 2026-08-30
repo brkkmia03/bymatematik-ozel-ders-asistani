@@ -516,6 +516,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, [isLessonTimerRunning]);
 
+  // Savunmacı canlı ders temizliği: tamamlanan/iptal edilen/silinen bir ders
+  // hiçbir ekranda "canlı ders devam ediyor" durumunu açık bırakamaz.
+  useEffect(() => {
+    if (!activeLessonId) return;
+    const active = lessons.find((lesson) => lesson.id === activeLessonId);
+    if (!active || ['Tamamlandı', 'İptal Edildi', 'Öğretmen İptal Etti', 'Ertelendi'].includes(active.status)) {
+      setActiveLessonId(null);
+      setActiveLessonStartTime(null);
+      setActiveLessonElapsedSeconds(0);
+      setIsLessonTimerRunning(false);
+    }
+  }, [activeLessonId, lessons]);
+
   const dismissToast = (id: string) => setToasts((prev) => prev.filter((t) => t.id !== id));
   const pushToast = (toast: Omit<AppToast, 'id'>) => {
     const id = createEntityId('toast');
@@ -974,17 +987,60 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       conflictWarning = `Bu saat aralığında başka bir ders bulunmaktadır (${conflictingStudent ? `${conflictingStudent.firstName} ${conflictingStudent.lastName}` : 'Ders'} - ${conflict.startTime}, ${conflict.duration} dk).`;
     }
 
+    const isHistoricalCompleted = data.status === 'Tamamlandı';
+    const completedTimestamp = isHistoricalCompleted ? new Date().toISOString() : undefined;
     const newLesson: Lesson = {
       ...data,
       id: createEntityId('les'),
+      actualDuration: isHistoricalCompleted ? data.duration : data.actualDuration,
+      completedAt: isHistoricalCompleted ? completedTimestamp : data.completedAt,
       createdAt: new Date().toISOString().split('T')[0],
     };
 
     setLessons((prev) => [newLesson, ...prev]);
 
-    // Create notification for upcoming lesson
     const student = students.find((s) => s.id === data.studentId);
-    if (student) {
+
+    // Geçmişte bitmiş bir ders hızlı kayıtla eklendiyse finans/paket tarafını da
+    // tamamlanmış bir ders gibi işle. Böylece ana kayıt ile finans verisi ayrışmaz.
+    if (isHistoricalCompleted && student && data.isBillable) {
+      const activePackage = packages.find((p) => p.studentId === student.id && p.status === 'Aktif');
+      if (activePackage) {
+        const updatedUsed = activePackage.usedLessons + 1;
+        const updatedRemaining = Math.max(0, activePackage.totalLessons - updatedUsed);
+        setPackages((prev) =>
+          prev.map((p) =>
+            p.id === activePackage.id
+              ? {
+                  ...p,
+                  usedLessons: updatedUsed,
+                  remainingLessons: updatedRemaining,
+                  status: updatedRemaining === 0 ? 'Tamamlandı' : 'Aktif',
+                }
+              : p
+          )
+        );
+      } else {
+        const baseFee = student.lessonFee ?? data.fee ?? teacher.defaultLessonFee ?? teacher.defaultHourlyRate;
+        const fee = student.feeType === 'Saatlik'
+          ? Math.round((baseFee * data.duration) / 60 * 100) / 100
+          : baseFee;
+        const newTxn: FinancialTransaction = {
+          id: createEntityId('txn'),
+          studentId: student.id,
+          type: 'Ders Ücreti',
+          amount: fee,
+          date: data.date,
+          lessonId: newLesson.id,
+          description: `${data.topic || 'Matematik'} Özel Dersi (${data.duration} dk)`,
+          createdAt: completedTimestamp || new Date().toISOString(),
+        };
+        setTransactions((prev) => [newTxn, ...prev]);
+      }
+    }
+
+    // Yalnızca gelecekteki/planlı dersler için yaklaşan ders bildirimi oluştur.
+    if (student && !isHistoricalCompleted) {
       addNotification({
         title: `Ders Planlandı: ${student.firstName} ${student.lastName}`,
         message: `${data.date} saat ${data.startTime}'de ${data.duration} dk ${data.topic || 'Matematik'} dersi planlandı.`,
@@ -997,7 +1053,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
     }
 
-    pushToast({ type: conflictWarning ? 'warning' : 'success', title: conflictWarning ? 'Ders çakışması uyarısı' : 'Ders planlandı', message: conflictWarning || `${data.date} ${data.startTime} için ders eklendi.` });
+    pushToast({
+      type: conflictWarning ? 'warning' : 'success',
+      title: conflictWarning ? 'Ders çakışması uyarısı' : isHistoricalCompleted ? 'Geçmiş ders kaydedildi' : 'Ders planlandı',
+      message: conflictWarning || (isHistoricalCompleted
+        ? `${data.date} ${data.startTime} dersi Tamamlandı olarak kaydedildi.`
+        : `${data.date} ${data.startTime} için ders eklendi.`),
+    });
     return { lesson: newLesson, conflictWarning };
   };
 
@@ -1157,7 +1219,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     } else if (summary.isBillable) {
       // 4. Financial Transaction: Add standard lesson fee charge
-      const baseFee = targetLesson.fee || student.lessonFee || teacher.defaultHourlyRate;
+      const baseFee = student.lessonFee ?? targetLesson.fee ?? teacher.defaultLessonFee ?? teacher.defaultHourlyRate;
       const fee = student.feeType === 'Saatlik'
         ? Math.round((baseFee * actualMins) / 60 * 100) / 100
         : baseFee;
@@ -1292,6 +1354,156 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveLessonElapsedSeconds(0);
     setIsLessonTimerRunning(false);
   };
+
+  // Takvim saati ile otomatik ders akışı.
+  // PWA açıkken ders planlanan saatte kendiliğinden canlı duruma geçer;
+  // süre dolduğunda tamamlanır. Uygulama ders sırasında kapalı kaldıysa,
+  // yeniden açıldığında saat kontrolü eksik geçişleri otomatik olarak tamamlar.
+  useEffect(() => {
+    if (!user || !cloudReady) return;
+
+    const finalStatuses = new Set(['Tamamlandı', 'İptal Edildi', 'Öğretmen İptal Etti', 'Ertelendi', 'Öğrenci Katılmadı']);
+
+    const getLessonBounds = (lesson: Lesson) => {
+      const start = new Date(`${lesson.date}T${lesson.startTime}:00`);
+      const startMs = start.getTime();
+      return {
+        startMs,
+        endMs: startMs + Math.max(1, Number(lesson.duration || 0)) * 60_000,
+      };
+    };
+
+    const finalizeByClock = (lesson: Lesson, scheduledEndMs: number) => {
+      if (completingLessonIdsRef.current.has(lesson.id) || lesson.status === 'Tamamlandı') return;
+      const student = students.find((s) => s.id === lesson.studentId);
+      if (!student) return;
+
+      completingLessonIdsRef.current.add(lesson.id);
+      localMutationGuardUntilRef.current = Date.now() + 5000;
+      const completedAt = new Date(scheduledEndMs).toISOString();
+      const actualMins = Math.max(1, Number(lesson.duration || student.lessonDuration || 60));
+
+      setLessons((prev) => prev.map((item) => item.id === lesson.id ? {
+        ...item,
+        status: 'Tamamlandı' as const,
+        actualDuration: actualMins,
+        startedAt: item.startedAt || new Date(scheduledEndMs - actualMins * 60_000).toISOString(),
+        completedAt,
+      } : item));
+
+      if (lesson.isBillable) {
+        const activePackage = packages.find((pkg) => pkg.studentId === student.id && pkg.status === 'Aktif');
+        if (activePackage) {
+          const updatedUsed = activePackage.usedLessons + 1;
+          const updatedRemaining = Math.max(0, activePackage.totalLessons - updatedUsed);
+          setPackages((prev) => prev.map((pkg) => pkg.id === activePackage.id ? {
+            ...pkg,
+            usedLessons: updatedUsed,
+            remainingLessons: updatedRemaining,
+            status: updatedRemaining === 0 ? 'Tamamlandı' : 'Aktif',
+          } : pkg));
+        } else {
+          const alreadyCharged = transactions.some((txn) => txn.lessonId === lesson.id && txn.type === 'Ders Ücreti' && !txn.isCancelled);
+          if (!alreadyCharged) {
+            const baseFee = student.lessonFee ?? lesson.fee ?? teacher.defaultLessonFee ?? teacher.defaultHourlyRate;
+            const amount = student.feeType === 'Saatlik'
+              ? Math.round((baseFee * actualMins) / 60 * 100) / 100
+              : baseFee;
+            const txn: FinancialTransaction = {
+              id: createEntityId('txn'),
+              studentId: student.id,
+              type: 'Ders Ücreti',
+              amount,
+              date: lesson.date,
+              lessonId: lesson.id,
+              description: `${lesson.topic || 'Matematik'} Özel Dersi (${actualMins} dk)`,
+              createdAt: completedAt,
+            };
+            setTransactions((prev) => [txn, ...prev]);
+          }
+        }
+      }
+
+      const notificationId = `auto-lesson-ended-${lesson.id}`;
+      setNotifications((prev) => prev.some((n) => n.id === notificationId) ? prev : [{
+        id: notificationId,
+        title: 'Ders Tamamlandı',
+        message: `${student.firstName} ${student.lastName} • ${lesson.topic || 'Matematik Dersi'} • ${actualMins} dk`,
+        type: 'Sistem Uyarısı' as const,
+        date: lesson.date,
+        isRead: false,
+        relatedEntityId: lesson.id,
+        relatedStudentId: student.id,
+        linkTab: 'calendar',
+        createdAt: completedAt,
+      }, ...prev]);
+
+      if (activeLessonId === lesson.id) {
+        setActiveLessonId(null);
+        setActiveLessonStartTime(null);
+        setActiveLessonElapsedSeconds(0);
+        setIsLessonTimerRunning(false);
+      }
+
+      if (document.visibilityState === 'visible') {
+        pushToast({
+          type: 'success',
+          title: 'Ders süresi tamamlandı',
+          message: `${student.firstName} ${student.lastName} dersi otomatik olarak tamamlandı.`,
+        });
+      }
+    };
+
+    const syncLessonsWithClock = () => {
+      const now = Date.now();
+      const eligible = lessons
+        .filter((lesson) => !finalStatuses.has(lesson.status))
+        .map((lesson) => ({ lesson, ...getLessonBounds(lesson) }))
+        .filter((item) => Number.isFinite(item.startMs) && Number.isFinite(item.endMs))
+        .sort((a, b) => a.startMs - b.startMs);
+
+      for (const { lesson, startMs, endMs } of eligible) {
+        if (now >= endMs) {
+          finalizeByClock(lesson, endMs);
+          continue;
+        }
+
+        if (now >= startMs && now < endMs) {
+          if (lesson.status !== 'Başladı') {
+            localMutationGuardUntilRef.current = Date.now() + 5000;
+            setLessons((prev) => prev.map((item) => item.id === lesson.id ? {
+              ...item,
+              status: 'Başladı' as const,
+              startedAt: item.startedAt || new Date(startMs).toISOString(),
+            } : item));
+          }
+
+          // Çakışma engeli nedeniyle aynı anda tek ders beklenir. Canlı kartı planlanan
+          // başlangıçtan itibaren geçen gerçek süreyle senkronla.
+          if (!activeLessonId || activeLessonId === lesson.id) {
+            setActiveLessonId(lesson.id);
+            setActiveLessonStartTime(startMs);
+            setActiveLessonElapsedSeconds(Math.max(0, Math.floor((now - startMs) / 1000)));
+            setIsLessonTimerRunning(true);
+          }
+          break;
+        }
+      }
+    };
+
+    syncLessonsWithClock();
+    const interval = window.setInterval(syncLessonsWithClock, 15_000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') syncLessonsWithClock();
+    };
+    window.addEventListener('focus', syncLessonsWithClock);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', syncLessonsWithClock);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [user, cloudReady, lessons, students, packages, transactions, teacher.defaultLessonFee, teacher.defaultHourlyRate, activeLessonId]);
 
   // Assignment Actions
   const addAssignment = (data: Omit<Assignment, 'id' | 'createdAt'>): Assignment => {

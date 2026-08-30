@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bymatematik-shell-v6';
+const CACHE_NAME = 'bymatematik-shell-v7';
 const APP_SHELL = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
@@ -50,7 +50,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data?.text() || '' }; }
-  const title = data.title || 'bymatematik Ders Hatırlatması';
+  const title = data.title || 'bymatematik';
   const options = {
     body: data.body || 'Yaklaşan dersiniz var.',
     icon: '/icon-192.png',

@@ -122,7 +122,6 @@ export function generateHTMLReportContent(
       const completedLessons = allLessons.filter((l) => l.status === 'Tamamlandı');
       const completedAssignments = allAssignments.filter((a) => a.status === 'Tamamlandı' || a.status === 'Kontrol Edildi');
       const totalMinutes = completedLessons.reduce((sum,l)=>sum+(l.actualDuration || l.duration || 0),0);
-      const balance = calculateStudentBalance(student.id, transactions).balance;
       body = `
         <p class="confidential">Öğrenci Tam Dosyası öğretmen kullanımına yönelik kapsamlı arşiv çıktısıdır. Öğretmen özel notları ve finans kayıtları içerebilir.</p>
         <h2>Öğrenci Bilgileri</h2>
@@ -145,7 +144,6 @@ export function generateHTMLReportContent(
           <div class="metric"><span>Tamamlanan Ders</span><strong>${completedLessons.length}</strong><small>${(totalMinutes/60).toFixed(1)} saat</small></div>
           <div class="metric"><span>Ödev Tamamlama</span><strong>%${allAssignments.length ? Math.round(completedAssignments.length/allAssignments.length*100) : 0}</strong><small>${completedAssignments.length}/${allAssignments.length}</small></div>
           <div class="metric"><span>Sınav Kaydı</span><strong>${allExams.length}</strong><small>Deneme / sınav</small></div>
-          <div class="metric"><span>Güncel Bakiye</span><strong>${esc(formatCurrency(balance, teacher.currency))}</strong><small>Hesap hareketlerinden</small></div>
         </div>
         <h2>Akademik Hedefler</h2>
         ${table(['Hedef','Tür','Hedef','Mevcut','Tarih','Durum','Not'], allGoals.map(g=>[esc(g.title),esc(g.goalType),esc(g.targetValue),esc(g.currentValue ?? '-'),esc(g.targetDate ? formatDateTurkish(g.targetDate,'short') : '-'),esc(g.status),esc(g.notes || '-')]))}

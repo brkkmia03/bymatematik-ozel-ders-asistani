@@ -7,7 +7,6 @@ import {
   Clock,
   AlertTriangle,
   CreditCard,
-  Play,
   CheckCircle,
   FileText,
   User,
@@ -33,8 +32,6 @@ export const DersOncesiOzetModal: React.FC<DersOncesiOzetModalProps> = ({
     assignments,
     packages,
     transactions,
-    startLiveLesson,
-    openModal,
   } = useApp();
 
   // Find previous completed lessons and notes for this student
@@ -194,17 +191,9 @@ export const DersOncesiOzetModal: React.FC<DersOncesiOzetModalProps> = ({
           >
             Kapat
           </button>
-          <button
-            onClick={() => {
-              onClose();
-              startLiveLesson(lesson.id);
-              openModal('liveLesson', { lesson, student });
-            }}
-            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2 transition-all active:scale-95"
-          >
-            <Play className="w-4 h-4" />
-            <span>Dersi Başlat (Kronometre)</span>
-          </button>
+          <div className="px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900 text-xs font-bold">
+            ⏱️ Ders, takvimdeki başlangıç saatinde otomatik başlayacak.
+          </div>
         </div>
       </div>
     </div>

@@ -42,7 +42,8 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({
   const [location, setLocation] = useState('');
   const [topic, setTopic] = useState(initialTopic || '');
   const [subtopic, setSubtopic] = useState('');
-  const [fee, setFee] = useState(teacher.defaultLessonFee || 800);
+  const initialSelectedStudent = activeStudents.find((s) => s.id === (initialStudentId || activeStudents[0]?.id));
+  const [fee, setFee] = useState(initialSelectedStudent?.lessonFee ?? teacher.defaultLessonFee ?? teacher.defaultHourlyRate ?? 0);
   const [notes, setNotes] = useState('');
   const [repeatWeeks, setRepeatWeeks] = useState(1);
   const [error, setError] = useState('');
@@ -63,6 +64,17 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({
 
   const selectedStudent = activeStudents.find((s) => s.id === studentId);
 
+  const isPastCompletedLesson = (lessonDate: string, lessonStartTime: string, lessonDuration: number) => {
+    const [year, month, day] = lessonDate.split('-').map(Number);
+    const [hour, minute] = lessonStartTime.split(':').map(Number);
+    if (![year, month, day, hour, minute, lessonDuration].every(Number.isFinite)) return false;
+    const lessonEnd = new Date(year, month - 1, day, hour, minute, 0, 0);
+    lessonEnd.setMinutes(lessonEnd.getMinutes() + Number(lessonDuration));
+    return lessonEnd.getTime() < Date.now();
+  };
+
+  const selectedLessonIsPast = isPastCompletedLesson(date, startTime, Number(duration));
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -80,12 +92,13 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({
       lessonDate.setDate(lessonDate.getDate() + i * 7);
       const formattedDate = toLocalDateInputValue(lessonDate);
 
+      const historicalCompleted = isPastCompletedLesson(formattedDate, startTime, Number(duration));
       const result = addLesson({
         studentId,
         date: formattedDate,
         startTime,
         duration: Number(duration),
-        status: 'Planlandı',
+        status: historicalCompleted ? 'Tamamlandı' : 'Planlandı',
         lessonType,
         location: location.trim() || undefined,
         topic: topic.trim() || 'Matematik Dersi',
@@ -133,6 +146,12 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           {activeStudents.length === 0 && <div className="p-3 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900 text-xs text-sky-800 dark:text-sky-200">Ders planlamak için önce aktif bir öğrenci ekleyin.</div>}
           {error && <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs font-semibold text-rose-700 dark:text-rose-300">{error}</div>}
+          {selectedLessonIsPast && (
+            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-xs text-emerald-800 dark:text-emerald-200 flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span><strong>Geçmiş ders kaydı:</strong> Seçilen dersin bitiş saati geçtiği için kayıt otomatik olarak <strong>Tamamlandı</strong> durumunda oluşturulacak.</span>
+            </div>
+          )}
           {/* Conflict Warning */}
           {conflictLesson && (
             <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-900 flex items-start gap-2.5 text-amber-800 dark:text-amber-200 text-xs">

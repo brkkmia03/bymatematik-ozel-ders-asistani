@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Edit2,
   FileText,
+  Trash2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { calculateStudentStats, formatCurrency } from '../utils/formatters';
@@ -20,12 +21,24 @@ export const StudentsView: React.FC = () => {
     examResults: exams,
     packages,
     transactions,
+    deleteStudentPermanent,
     openModal,
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [gradeFilter, setGradeFilter] = useState('all');
   const [tabFilter, setTabFilter] = useState<'active' | 'archived'>('active');
+
+  const confirmAndDeleteStudent = (student: (typeof students)[number]) => {
+    const fullName = `${student.firstName} ${student.lastName}`;
+    const confirmed = window.confirm(
+      `${fullName} kalıcı olarak silinecek.\n\nBu işlem öğrencinin derslerini, ödevlerini, sınavlarını, konu ilerlemesini, hedeflerini, yazılı kayıtlarını, paket/finans hareketlerini, WhatsApp geçmişini ve öğrenciye bağlı diğer kayıtları da silecektir.\n\nBu işlem geri alınamaz. Devam etmek istiyor musunuz?`
+    );
+    if (!confirmed) return;
+    const finalConfirmed = window.confirm(`SON ONAY: ${fullName} ve tüm ilişkili verileri kalıcı olarak silinsin mi?`);
+    if (!finalConfirmed) return;
+    deleteStudentPermanent(student.id);
+  };
 
   // Filter students
   const filteredStudents = students.filter((s) => {
@@ -234,6 +247,14 @@ export const StudentsView: React.FC = () => {
                   title="WhatsApp Mesajı Gönder"
                 >
                   <MessageSquare className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => confirmAndDeleteStudent(student)}
+                  className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 transition-colors"
+                  title="Öğrenciyi Sil"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
 
                 <button

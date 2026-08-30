@@ -868,7 +868,72 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const deleteStudentPermanent = (id: string) => {
+    const student = students.find((s) => s.id === id);
+    if (!student) return;
+
+    // Öğrenci silme işlemi geri alınamaz. Öğrenciye ait tüm ilişkili kayıtları
+    // tek seferde temizleyerek yetim kayıtların raporları/istatistikleri bozmasını önleriz.
+    const studentLessonIds = new Set(lessons.filter((l) => l.studentId === id).map((l) => l.id));
+    const studentWrittenExamIds = new Set(writtenExams.filter((w) => w.studentId === id).map((w) => w.id));
+    const studentPreparationIds = new Set(
+      writtenPreparations
+        .filter((p) => p.studentId === id || studentWrittenExamIds.has(p.writtenExamId))
+        .map((p) => p.id)
+    );
+    const studentPackageIds = new Set(packages.filter((pkg) => pkg.studentId === id).map((pkg) => pkg.id));
+    const removedEntityIds = new Set<string>([
+      ...studentLessonIds,
+      ...studentWrittenExamIds,
+      ...studentPreparationIds,
+      ...studentPackageIds,
+      ...assignments.filter((a) => a.studentId === id).map((a) => a.id),
+      ...examResults.filter((e) => e.studentId === id).map((e) => e.id),
+      ...goals.filter((g) => g.studentId === id).map((g) => g.id),
+      ...topicProgress.filter((p) => p.studentId === id).map((p) => p.id),
+      ...transactions.filter((t) => t.studentId === id).map((t) => t.id),
+      ...tasks.filter((t) => t.studentId === id || (t.writtenExamId && studentWrittenExamIds.has(t.writtenExamId)) || (t.preparationId && studentPreparationIds.has(t.preparationId))).map((t) => t.id),
+    ]);
+
     setStudents((prev) => prev.filter((s) => s.id !== id));
+    setLessons((prev) => prev.filter((l) => l.studentId !== id));
+    setLessonNotes((prev) => prev.filter((n) => n.studentId !== id && !studentLessonIds.has(n.lessonId)));
+    setAssignments((prev) => prev.filter((a) => a.studentId !== id));
+    setTopicProgress((prev) => prev.filter((p) => p.studentId !== id));
+    setGoals((prev) => prev.filter((g) => g.studentId !== id));
+    setExamResults((prev) => prev.filter((e) => e.studentId !== id));
+    setWrittenExams((prev) => prev.filter((w) => w.studentId !== id));
+    setWrittenPreparations((prev) => prev.filter((p) => p.studentId !== id && !studentWrittenExamIds.has(p.writtenExamId)));
+    setTasks((prev) => prev.filter((t) => !(
+      t.studentId === id ||
+      (t.writtenExamId && studentWrittenExamIds.has(t.writtenExamId)) ||
+      (t.preparationId && studentPreparationIds.has(t.preparationId))
+    )));
+    setDocuments((prev) => prev.flatMap((d) => {
+      if (d.writtenExamId && studentWrittenExamIds.has(d.writtenExamId)) return [];
+      if (!d.studentIds.includes(id)) return [d];
+      const remainingStudentIds = d.studentIds.filter((studentId) => studentId !== id);
+      // Yalnızca bu öğrenciye bağlı dokümanı kaldır; paylaşılan dokümanda diğer öğrenci bağlarını koru.
+      return remainingStudentIds.length > 0 ? [{ ...d, studentIds: remainingStudentIds }] : [];
+    }));
+    setPackages((prev) => prev.filter((pkg) => pkg.studentId !== id));
+    setTransactions((prev) => prev.filter((t) => t.studentId !== id));
+    setNotifications((prev) => prev.filter((n) =>
+      n.relatedStudentId !== id && !(n.relatedEntityId && removedEntityIds.has(n.relatedEntityId))
+    ));
+    setWhatsAppLogs((prev) => prev.filter((log) => log.studentId !== id));
+
+    if (activeLessonId && studentLessonIds.has(activeLessonId)) {
+      setActiveLessonId(null);
+      setActiveLessonStartTime(null);
+      setActiveLessonElapsedSeconds(0);
+      setIsLessonTimerRunning(false);
+    }
+
+    pushToast({
+      type: 'success',
+      title: 'Öğrenci silindi',
+      message: `${student.firstName} ${student.lastName} ve ilişkili kayıtları kalıcı olarak silindi.`,
+    });
   };
 
   // Lesson conflict checking

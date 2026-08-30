@@ -23,6 +23,7 @@ import {
   Edit2,
   Archive,
   RotateCcw,
+  Trash2,
 } from 'lucide-react';
 import { Student } from '../types';
 import { useApp } from '../context/AppContext';
@@ -89,6 +90,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
     transactions,
     archiveStudent,
     restoreStudent,
+    deleteStudentPermanent,
     openModal,
   } = useApp();
   const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
@@ -386,6 +388,23 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
             ) : (
               <button onClick={() => { if (window.confirm(`${student.firstName} ${student.lastName} arşivlenecek. Ders, ödev ve finans geçmişi korunacaktır. Devam etmek istiyor musunuz?`)) { archiveStudent(student.id); onClose(); } }} className="px-3 py-2 text-xs font-bold rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 flex items-center gap-1.5"><Archive className="w-3.5 h-3.5"/>Öğrenciyi Arşivle</button>
             )}
+            <button
+              onClick={() => {
+                const fullName = `${student.firstName} ${student.lastName}`;
+                const confirmed = window.confirm(
+                  `${fullName} kalıcı olarak silinecek.\n\nBu işlem öğrencinin derslerini, ödevlerini, sınavlarını, konu ilerlemesini, hedeflerini, yazılı kayıtlarını, paket/finans hareketlerini, WhatsApp geçmişini ve öğrenciye bağlı diğer kayıtları da silecektir.\n\nBu işlem geri alınamaz. Devam etmek istiyor musunuz?`
+                );
+                if (!confirmed) return;
+                const finalConfirmed = window.confirm(`SON ONAY: ${fullName} ve tüm ilişkili verileri kalıcı olarak silinsin mi?`);
+                if (!finalConfirmed) return;
+                deleteStudentPermanent(student.id);
+                onClose();
+              }}
+              className="px-3 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 transition-colors"
+              title="Öğrenciyi ve ilişkili verilerini kalıcı olarak sil"
+            >
+              <Trash2 className="w-3.5 h-3.5"/>Öğrenciyi Sil
+            </button>
             <div className="ml-auto text-[11px] text-slate-400 flex items-center gap-1"><School className="w-3.5 h-3.5"/>{student.schoolName || 'Okul belirtilmedi'} <span>•</span> <Phone className="w-3.5 h-3.5"/>{phone.formatted || student.parentPhone || '-'}</div>
           </div>
         </div>

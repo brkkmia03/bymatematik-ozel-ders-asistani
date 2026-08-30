@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bymatematik-shell-v5';
+const CACHE_NAME = 'bymatematik-shell-v6';
 const APP_SHELL = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
@@ -44,4 +44,31 @@ self.addEventListener('fetch', (event) => {
       return cached || network;
     })
   );
+});
+
+
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data?.text() || '' }; }
+  const title = data.title || 'bymatematik Ders Hatırlatması';
+  const options = {
+    body: data.body || 'Yaklaşan dersiniz var.',
+    icon: '/icon-192.png',
+    badge: '/favicon-64.png',
+    tag: data.tag || 'bymatematik-lesson-reminder',
+    data: { url: data.url || '/' },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = event.notification.data?.url || '/';
+  event.waitUntil((async () => {
+    const clientsList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of clientsList) {
+      if ('focus' in client) { await client.focus(); if ('navigate' in client) await client.navigate(target); return; }
+    }
+    if (clients.openWindow) await clients.openWindow(target);
+  })());
 });

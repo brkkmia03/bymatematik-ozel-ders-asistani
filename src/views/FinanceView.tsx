@@ -81,7 +81,7 @@ export const FinanceView: React.FC = () => {
             </button>
 
             <button
-              onClick={() => openModal('pdfPreview', { reportType: 'finance_summary' })}
+              onClick={() => openModal('pdfPreview', { reportType: 'financial_summary' })}
               className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-2 transition-all"
             >
               <FileText className="w-4 h-4" />
@@ -241,8 +241,9 @@ export const FinanceView: React.FC = () => {
                         isIncome ? 'text-emerald-600' : 'text-slate-800 dark:text-slate-200'
                       }`}
                     >
-                      {isIncome ? '+' : '-'}
+                      {isIncome ? '+' : ''}
                       {formatCurrency(tx.amount, teacher.currency)}
+                      {tx.type === 'Ders Ücreti' ? <span className="ml-2 text-[10px] font-bold text-amber-600">Bekleyen Ödeme</span> : null}
                     </span>
 
                     {!tx.isCancelled && (

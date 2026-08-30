@@ -20,6 +20,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { enablePushNotifications, disablePushNotifications, getPushStatus } from '../services/pushNotifications';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -38,6 +39,7 @@ export const SettingsView: React.FC = () => {
     settings,
     updateUserSettings,
     pushToast,
+    user,
   } = useApp();
 
   const [firstName, setFirstName] = useState(teacher.firstName);
@@ -63,6 +65,8 @@ export const SettingsView: React.FC = () => {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [pushStatus, setPushStatus] = useState<'unsupported'|'unconfigured'|'denied'|'enabled'|'disabled'>('disabled');
+  const [pushBusy, setPushBusy] = useState(false);
 
   useEffect(() => {
     const detectStandalone = () => {
@@ -85,6 +89,27 @@ export const SettingsView: React.FC = () => {
       window.removeEventListener('appinstalled', handleInstalled);
     };
   }, []);
+
+  useEffect(() => { getPushStatus().then(setPushStatus).catch(() => setPushStatus('disabled')); }, []);
+
+  const handlePhonePush = async () => {
+    if (!user) return;
+    setPushBusy(true);
+    try {
+      if (pushStatus === 'enabled') {
+        await disablePushNotifications(user.id);
+        setPushStatus('disabled');
+        pushToast({ type: 'success', title: 'Telefon bildirimleri kapatıldı', message: 'Bu cihaz artık push dersi hatırlatması almayacak.' });
+      } else {
+        await enablePushNotifications(user.id);
+        setPushStatus('enabled');
+        pushToast({ type: 'success', title: 'Telefon bildirimleri açık', message: 'Ders hatırlatmaları uygulama kapalıyken de bu cihaza gönderilebilir.' });
+      }
+    } catch (error: any) {
+      setPushStatus(await getPushStatus().catch(() => 'disabled' as const));
+      pushToast({ type: 'error', title: 'Telefon bildirimi açılamadı', message: error?.message || 'Bildirim yapılandırmasını kontrol edin.' });
+    } finally { setPushBusy(false); }
+  };
 
   const handleInstallApp = async () => {
     if (!installPrompt) return;
@@ -312,6 +337,12 @@ export const SettingsView: React.FC = () => {
           <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
             <div><span className="text-xs font-bold block">Uygulama Bildirimleri</span><span className="text-[11px] text-slate-500">Ders, ödev, yazılı, finans ve materyal uyarılarını etkinleştir.</span></div>
             <input type="checkbox" checked={notificationsEnabled} onChange={e=>setNotificationsEnabled(e.target.checked)} className="w-5 h-5 rounded border-slate-300 text-indigo-600"/>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-indigo-50 dark:bg-indigo-950/30 rounded-2xl border border-indigo-100 dark:border-indigo-900">
+            <div><span className="text-xs font-bold block">Telefon Push Bildirimleri</span><span className="text-[11px] text-slate-500">PWA kapalıyken de ders hatırlatması almak için bu cihazı kaydet.</span></div>
+            <button type="button" disabled={pushBusy || pushStatus === 'unsupported' || pushStatus === 'unconfigured'} onClick={handlePhonePush} className="px-3.5 py-2 rounded-xl bg-indigo-600 disabled:bg-slate-300 text-white text-xs font-bold whitespace-nowrap">
+              {pushBusy ? 'İşleniyor…' : pushStatus === 'enabled' ? 'Bildirimleri Kapat' : pushStatus === 'unconfigured' ? 'Sunucu Kurulumu Gerekli' : pushStatus === 'unsupported' ? 'Desteklenmiyor' : pushStatus === 'denied' ? 'İzin Engelli' : 'Telefonda Etkinleştir'}
+            </button>
           </div>
           <div className="space-y-2"><label className="text-xs font-bold text-slate-700 dark:text-slate-300">Ders Öncesi Hatırlatma Zamanları</label><div className="flex flex-wrap gap-2">{[[15,'15 dk'],[30,'30 dk'],[60,'1 saat'],[120,'2 saat'],[1440,'1 gün']].map(([min,label]) => { const m=Number(min); const active=leadTimes.includes(m); return <button type="button" key={m} onClick={()=>setLeadTimes(prev=>active?prev.filter(x=>x!==m):[...prev,m].sort((a,b)=>a-b))} className={`px-3 py-2 rounded-xl text-xs font-bold border ${active?'bg-indigo-600 border-indigo-600 text-white':'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}>{label}</button>})}</div></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="space-y-1"><label className="text-xs font-bold flex items-center gap-1"><Clock3 className="w-3.5 h-3.5"/>Sessiz Saat Başlangıcı</label><input type="time" value={quietStart} onChange={e=>setQuietStart(e.target.value)} className="w-full text-xs p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"/></div><div className="space-y-1"><label className="text-xs font-bold">Sessiz Saat Bitişi</label><input type="time" value={quietEnd} onChange={e=>setQuietEnd(e.target.value)} className="w-full text-xs p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"/></div></div>

@@ -64,7 +64,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const [h, m] = l.startTime.split(':').map(Number);
     return h * 60 + m >= currentMinutes;
   }) || todayLessons.find((l) => ['Planlandı', 'Yaklaşıyor'].includes(l.status));
-  const primaryHeroLesson = liveLesson || nextPendingLesson || null;
+  // The hero must never contradict the 'Bugünün Dersleri' list. If today's next lesson
+  // has already passed or has a non-pending status, still show today's first real lesson.
+  const primaryHeroLesson = liveLesson || nextPendingLesson || todayLessons[0] || null;
   const heroStudent = primaryHeroLesson ? students.find((s) => s.id === primaryHeroLesson.studentId) : null;
 
   // Student's recent assignment status

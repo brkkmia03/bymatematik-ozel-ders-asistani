@@ -30,7 +30,7 @@ export const CurriculumView: React.FC = () => {
 
   const activeStudent = students.find((s) => s.id === selectedStudentId);
   const curriculumTabs = useMemo(() => {
-    const order = ['5. Sınıf','6. Sınıf','7. Sınıf','8. Sınıf (LGS)','9. Sınıf','10. Sınıf','11. Sınıf','12. Sınıf','TYT Matematik','AYT Matematik','TYT + AYT Geometri'];
+    const order = ['5. Sınıf','6. Sınıf','7. Sınıf','8. Sınıf (LGS)','9. Sınıf','10. Sınıf','11. Sınıf','12. Sınıf','TYT Matematik','AYT Matematik','TYT + AYT Geometri','KPSS Matematik','DGS Matematik','ALES Matematik'];
     const available = new Set(CURRICULUM_DATA.map((x) => x.gradeOrExam));
     return order.filter((item) => available.has(item));
   }, []);

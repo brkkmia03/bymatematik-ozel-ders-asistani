@@ -34,8 +34,10 @@ export const WhatsAppView: React.FC = () => {
     | 'schedule_change'
     | 'written_exam_prep'
     | 'motivation'
+    | 'custom'
   >('lesson_report');
   const [copied, setCopied] = useState(false);
+  const [customMessage, setCustomMessage] = useState('');
 
   const activeStudent = students.find((s) => s.id === selectedStudentId) || students[0];
   const studentLessons = lessons.filter((l) => l.studentId === activeStudent?.id);
@@ -45,17 +47,22 @@ export const WhatsAppView: React.FC = () => {
   );
   const pendingAssignment = assignments.find((a) => a.studentId === activeStudent?.id);
 
-  // Generate dynamic message
-  const messageText = generateWhatsAppMessage(templateType, {
-    student: activeStudent,
-    teacher,
-    lesson: latestLesson,
-    assignment: pendingAssignment,
-    packageItem: activePackage,
-  });
+  // Generate dynamic message. Özgün mesajda imza otomatik eklenir.
+  const teacherName = `${teacher.firstName} ${teacher.lastName}`.trim();
+  const customSignature = `Matematik Öğretmeni\n${teacherName}`;
+  const messageText = templateType === 'custom'
+    ? `${customMessage.trim()}${customMessage.trim() ? '\n\n' : ''}${customSignature}`
+    : generateWhatsAppMessage(templateType, {
+        student: activeStudent,
+        teacher,
+        lesson: latestLesson,
+        assignment: pendingAssignment,
+        packageItem: activePackage,
+      });
 
   const handleSend = () => {
     if (!activeStudent) return;
+    if (templateType === 'custom' && !customMessage.trim()) return;
     const phone = activeStudent.parentPhone || activeStudent.studentPhone;
     if (phone) {
       addWhatsAppLog({
@@ -71,6 +78,7 @@ export const WhatsAppView: React.FC = () => {
   };
 
   const handleCopy = () => {
+    if (templateType === 'custom' && !customMessage.trim()) return;
     navigator.clipboard.writeText(messageText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -124,6 +132,7 @@ export const WhatsAppView: React.FC = () => {
               <option value="schedule_change">🕒 Randevu & Saat Güncellemesi</option>
               <option value="written_exam_prep">📝 Okul Yazılı Sınav Hazırlığı</option>
               <option value="motivation">🌟 Haftalık Başarı & Tebrik Mesajı</option>
+              <option value="custom">✍️ Özgün Mesaj Yaz</option>
             </select>
           </div>
         </div>
@@ -158,6 +167,24 @@ export const WhatsAppView: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {templateType === 'custom' && (
+            <div className="bg-white/90 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-2">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                Özgün mesajınızı yazın
+              </label>
+              <textarea
+                value={customMessage}
+                onChange={(e) => setCustomMessage(e.target.value)}
+                rows={7}
+                placeholder="Veliye göndermek istediğiniz mesajı buraya yazın..."
+                className="w-full resize-y min-h-[150px] rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+              <p className="text-[11px] text-slate-500">
+                Mesajın sonuna “Matematik Öğretmeni” ve öğretmen adı-soyadı otomatik eklenir.
+              </p>
+            </div>
+          )}
 
           {/* Green Chat Bubble */}
           <div className="bg-[#d9fdd3] dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800/60 p-5 rounded-3xl rounded-tl-sm text-xs text-slate-900 dark:text-emerald-100 whitespace-pre-wrap font-sans leading-relaxed shadow-sm">

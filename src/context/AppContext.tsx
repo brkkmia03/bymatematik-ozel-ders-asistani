@@ -270,6 +270,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const cloudSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cloudInitTokenRef = useRef(0);
   const lastCloudPayloadRef = useRef('');
+  // Native confirm dialogs can fire focus/visibility events before React has flushed a local mutation.
+  // Guard cloud refresh briefly so an older cloud snapshot cannot immediately restore a just-deleted student.
+  const localMutationGuardUntilRef = useRef(0);
 
   const [teacher, setTeacher] = useState<TeacherProfile>(() =>
     loadScoped(initialSessionUser?.id, 'teacher', INITIAL_TEACHER)
@@ -870,6 +873,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const deleteStudentPermanent = (id: string) => {
     const student = students.find((s) => s.id === id);
     if (!student) return;
+
+    // The two native confirmation dialogs may trigger a window focus event on iOS/PWA.
+    // Without this guard refreshFromCloud could read the pre-delete snapshot and restore the student
+    // before the debounced cloud save runs. Keep refresh paused long enough for React state + cloud save.
+    localMutationGuardUntilRef.current = Date.now() + 5000;
 
     // Öğrenci silme işlemi geri alınamaz. Öğrenciye ait tüm ilişkili kayıtları
     // tek seferde temizleyerek yetim kayıtların raporları/istatistikleri bozmasını önleriz.
@@ -1675,6 +1683,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (!user || !cloudReady) return;
     const refreshFromCloud = async () => {
+      if (Date.now() < localMutationGuardUntilRef.current) return;
       if (!navigator.onLine) {
         setSyncStatus('offline');
         return;

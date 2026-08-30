@@ -75,7 +75,7 @@ const AppLayout: React.FC = () => {
   }, [activeModal, closeModal, openModal]);
 
   if (!authReady) {
-    return <div className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center text-sm font-bold">Oturum kontrol ediliyor...</div>;
+    return <div className="pwa-shell safe-area-top safe-area-bottom safe-area-x bg-slate-950 text-slate-200 flex items-center justify-center text-sm font-bold">Oturum kontrol ediliyor...</div>;
   }
 
   if (passwordRecoveryMode) {
@@ -87,16 +87,16 @@ const AppLayout: React.FC = () => {
   }
 
   if (!cloudReady) {
-    return <div className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center text-sm font-bold">Bulut verileri yükleniyor...</div>;
+    return <div className="pwa-shell safe-area-top safe-area-bottom safe-area-x bg-slate-950 text-slate-200 flex items-center justify-center text-sm font-bold">Bulut verileri yükleniyor...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
+    <div className="pwa-shell bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
       {/* Top Fixed Header Navbar */}
       <Navbar onNavigate={setActiveView} activeView={activeView} />
 
       {/* Main Responsive Grid Layout */}
-      <div className="flex-1 flex max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 gap-6">
+      <div className="safe-area-x flex-1 flex max-w-7xl w-full mx-auto px-2.5 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-24 lg:pb-6 gap-4 lg:gap-6">
         {/* Desktop & Tablet Sidebar */}
         <Sidebar activeView={activeView} onNavigate={setActiveView} />
 

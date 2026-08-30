@@ -50,7 +50,7 @@ export const AuthView: React.FC = () => {
 
   if (forgotMode && !passwordRecoveryMode) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 text-slate-900 dark:text-slate-100">
+      <div className="pwa-shell safe-area-top safe-area-bottom safe-area-x bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 text-slate-900 dark:text-slate-100">
         <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl p-6 sm:p-8">
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white font-black text-xl mb-3">b</div>
@@ -80,7 +80,7 @@ export const AuthView: React.FC = () => {
       if (!ok) setError('Şifre güncellenemedi.');
     };
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 text-slate-900 dark:text-slate-100">
+      <div className="pwa-shell safe-area-top safe-area-bottom safe-area-x bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 text-slate-900 dark:text-slate-100">
         <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl p-6 sm:p-8">
           <h1 className="text-2xl font-black text-center">Yeni Şifre Belirle</h1>
           <p className="text-sm text-slate-500 text-center mt-2 mb-6">Hesabınız için yeni şifrenizi oluşturun.</p>
@@ -95,7 +95,7 @@ export const AuthView: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 text-slate-900 dark:text-slate-100">
+    <div className="pwa-shell safe-area-top safe-area-bottom safe-area-x bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 text-slate-900 dark:text-slate-100">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl p-6 sm:p-8">
         <div className="text-center mb-7">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white font-black text-xl mb-3">b</div>

@@ -50,18 +50,60 @@
 }
 
 
-/* Mobil kullanım ve erişilebilirlik iyileştirmeleri */
-html { color-scheme: light; }
+/* Mobil/PWA kullanım ve iOS safe-area iyileştirmeleri */
+*, *::before, *::after { box-sizing: border-box; }
+html { color-scheme: light; width: 100%; min-width: 0; overflow-x: hidden; }
 html.dark { color-scheme: dark; }
-body { min-width: 320px; min-height: 100dvh; background: rgb(248 250 252); }
+body, #root {
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+body {
+  min-height: 100dvh;
+  background: rgb(248 250 252);
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
+}
 html.dark body { background: rgb(2 6 23); }
+img, svg, canvas, video { max-width: 100%; }
 button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 button, a { touch-action: manipulation; }
+
+.pwa-shell {
+  width: 100%;
+  max-width: 100vw;
+  min-height: 100dvh;
+  overflow-x: clip;
+}
+.safe-area-x {
+  padding-left: max(0.625rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.625rem, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 640px) {
+  .safe-area-x {
+    padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+  }
+}
+@media (min-width: 1024px) {
+  .safe-area-x {
+    padding-left: max(2rem, env(safe-area-inset-left, 0px));
+    padding-right: max(2rem, env(safe-area-inset-right, 0px));
+  }
+}
+.safe-area-top { padding-top: env(safe-area-inset-top, 0px); }
+.safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
 @media (max-width: 640px) {
   button { min-height: 40px; }
-  input, select, textarea { font-size: 16px; }
-  .mobile-safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+  input, select, textarea { font-size: 16px; max-width: 100%; }
+  .mobile-safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)); }
 }
-@supports (padding: max(0px)) {
-  body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+
+@media (display-mode: standalone) {
+  body { min-height: 100dvh; }
 }

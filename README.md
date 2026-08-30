@@ -74,4 +74,3 @@ Uygulama içinde **bymatematik** markası ve uygun alanlarda Instagram hesabı *
 ## Önemli production notu
 
 Bu çalışma ortamında ağ erişimi nedeniyle `npm install` tamamlanamadığından nihai Vite bundle'ı burada üretilemedi. Kaynak dosyaları sözdizimi ve bağlantı seviyesinde kontrol edilmiştir. Yayınlamadan önce internet erişimli bir geliştirme ortamında `npm install && npm run check` komutunu çalıştırın.
-Deployment: v1.3.0

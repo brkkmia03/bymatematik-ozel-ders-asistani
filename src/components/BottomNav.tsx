@@ -58,8 +58,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate }) 
   return (
     <>
       {/* Mobile Bottom Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-safe">
-        <div className="flex items-center justify-around h-16 px-2">
+      <div className="lg:hidden safe-area-bottom fixed bottom-0 left-0 right-0 z-40 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800">
+        <div className="safe-area-x flex items-center justify-around h-16 px-1">
           {primaryTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeView === tab.id;
@@ -98,7 +98,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate }) 
       {/* Slide-up Sheet for Additional Modules */}
       {showMoreMenu && (
         <div className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-800 max-h-[85vh] overflow-y-auto p-5 pb-8 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-200">
+          <div className="safe-area-bottom bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-800 max-h-[85dvh] overflow-y-auto p-4 sm:p-5 pb-8 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-base text-slate-900 dark:text-white font-display">

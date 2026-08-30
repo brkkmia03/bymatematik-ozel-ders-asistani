@@ -97,27 +97,27 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, activeView }) => {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
-      <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+    <header className="safe-area-top sticky top-0 z-30 w-full max-w-full overflow-visible bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
+      <div className="safe-area-x px-2.5 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Left: Brand Logo & Title */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={() => onNavigate('home')}
-            className="flex items-center gap-2.5 text-left group focus:outline-none"
+            className="flex items-center gap-2 sm:gap-2.5 text-left group focus:outline-none min-w-0"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-blue-700 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-blue-700 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
               ∑
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-lg text-slate-900 dark:text-white tracking-tight leading-none font-display">
+                <span className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white tracking-tight leading-none font-display">
                   bymatematik
                 </span>
                 <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 rounded-full">
                   Asistan
                 </span>
               </div>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block leading-tight">
+              <span className="hidden sm:block text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-tight">
                 Özel Ders Yönetim Sistemi
               </span>
             </div>
@@ -139,7 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, activeView }) => {
 
         {/* Center: Live Lesson Stopwatch Ticker (If Active) */}
         {runningLesson && (
-          <div className="flex items-center gap-2.5 bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800/80 px-3.5 py-1.5 rounded-full animate-pulse shadow-sm">
+          <div className="hidden md:flex items-center gap-2.5 bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800/80 px-3.5 py-1.5 rounded-full animate-pulse shadow-sm">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
             <div className="text-xs">
               <span className="font-bold text-indigo-950 dark:text-indigo-100">
@@ -164,7 +164,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, activeView }) => {
         )}
 
         {/* Right: Actions (Search, Quick Add, Notifs, Theme, Lock, Profile) */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={() => { void syncNow(); }}
@@ -183,7 +183,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, activeView }) => {
           {/* Universal Search Button */}
           <button
             onClick={() => openModal('universalSearch')}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors border border-slate-200 dark:border-slate-700 shadow-xs"
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors border border-slate-200 dark:border-slate-700 shadow-xs"
             title="Tüm sistemde ara (Ctrl+K)"
           >
             <Search className="w-3.5 h-3.5 text-slate-400" />
@@ -194,7 +194,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, activeView }) => {
           </button>
 
           {/* Quick Add Menu */}
-          <div className="relative" ref={quickAddRef}>
+          <div className="relative hidden sm:block" ref={quickAddRef}>
             <button
               onClick={() => setShowQuickAdd(!showQuickAdd)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 rounded-xl shadow-sm transition-all"
@@ -300,7 +300,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, activeView }) => {
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 py-3 z-50">
+              <div className="fixed left-2 right-2 top-[calc(env(safe-area-inset-top,0px)+3.5rem)] mt-2 sm:absolute sm:left-auto sm:top-auto sm:right-0 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 py-3 z-50">
                 <div className="px-4 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-slate-900 dark:text-white">
@@ -384,7 +384,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, activeView }) => {
                 theme: settings.theme === 'dark' ? 'light' : 'dark',
               })
             }
-            className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+            className="hidden sm:inline-flex p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
             title={settings.theme === 'dark' ? 'Aydınlık Mod' : 'Karanlık Mod'}
           >
             {settings.theme === 'dark' ? (
@@ -398,7 +398,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, activeView }) => {
           {security.isPinEnabled && security.pinCode && (
             <button
               onClick={lockAppNow}
-              className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              className="hidden sm:inline-flex p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
               title="Uygulamayı Kilitle"
             >
               <Lock className="w-4 h-4 text-slate-500" />
@@ -471,6 +471,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, activeView }) => {
           </div>
         </div>
       </div>
+
+      {runningLesson && (
+        <div className="md:hidden safe-area-x px-2.5 pb-2">
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/80 px-3 py-2 shadow-sm">
+            <div className="min-w-0 text-xs">
+              <div className="truncate font-bold text-indigo-950 dark:text-indigo-100">
+                {runningStudent ? `${runningStudent.firstName} ${runningStudent.lastName}` : 'Ders Devam Ediyor'}
+              </div>
+              <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{formatTimer(activeLessonElapsedSeconds)}</div>
+            </div>
+            <button
+              onClick={stopAndOpenCompletionModal}
+              className="shrink-0 px-3 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1"
+            >
+              <CheckCircle className="w-3.5 h-3.5" />
+              <span>Tamamla</span>
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

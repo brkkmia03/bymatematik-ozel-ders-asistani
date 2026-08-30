@@ -237,9 +237,9 @@ export const StudentsView: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => openModal('pdfPreview', { reportType: 'student_progress', student })}
+                  onClick={() => openModal('pdfPreview', { reportType: 'student_full_record', student })}
                   className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition-colors"
-                  title="Gelişim Raporu PDF Önizle"
+                  title="Tüm öğrenci verilerini PDF olarak al"
                 >
                   <FileText className="w-4 h-4" />
                 </button>

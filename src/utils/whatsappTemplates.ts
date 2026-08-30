@@ -27,8 +27,7 @@ export function generateWhatsAppMessage(
   const studentName = student ? `${student.firstName} ${student.lastName}` : 'Öğrencimiz';
   const parentName = student?.parentName ? `Sayın ${student.parentName}` : 'Sayın Velimiz';
   const teacherName = `${teacher.firstName} ${teacher.lastName}`;
-  const brandName = teacher.brandName || 'bymatematik';
-  const instagram = teacher.instagramHandle || teacher.instagram || '@bymatematiik';
+  const signature = `Matematik Öğretmeni\n${teacherName}`;
 
   switch (templateType) {
     case 'lesson_report': {
@@ -50,8 +49,7 @@ Bugün ${studentName} ile gerçekleştirdiğimiz matematik özel dersimiz veriml
 
 Öğrencimizin gayreti ve odaklanması için teşekkür eder, iyi günler dilerim.
 
-✨ *${teacherName}*
-📐 *${brandName}* • ${instagram}`;
+${signature}`;
     }
 
     case 'assignment': {
@@ -72,8 +70,7 @@ ${studentName} için hazırladığımız matematik ödev föyü detayları aşa�
 
 Öğrencimizin soruları dikkatle çözmesini ve takıldığı soruları işaretleyip derse getirmesini rica ederim.
 
-✨ *${teacherName}*
-📐 *${brandName}* • ${instagram}`;
+${signature}`;
     }
 
     case 'payment_reminder': {
@@ -90,8 +87,7 @@ Derslerin kesintisiz ve planlı şekilde devam edebilmesi adına yeni paket yük
 
 Anlayışınız ve iş birliğiniz için teşekkür eder, iyi çalışmalar dilerim.
 
-✨ *${teacherName}*
-📐 *${brandName}* • ${instagram}`;
+${signature}`;
     }
 
     case 'schedule_change': {
@@ -105,8 +101,7 @@ ${studentName} ile planlanan matematik özel dersimizin günü ve saati güncell
 
 Programda herhangi bir uyuşmazlık olması durumunda lütfen bildiriniz.
 
-✨ *${teacherName}*
-📐 *${brandName}* • ${instagram}`;
+${signature}`;
     }
 
     case 'written_exam_prep': {
@@ -118,8 +113,7 @@ Derslerimizde okul müfredatı klasik ve test soruları üzerinden kapsamlı sor
 
 Başarılar dilerim.
 
-✨ *${teacherName}*
-📐 *${brandName}* • ${instagram}`;
+${signature}`;
     }
 
     case 'motivation': {
@@ -129,8 +123,7 @@ ${studentName} son haftalarda matematik derslerinde göstermiş olduğu gayret, 
 
 Bu istikrarlı çalışmanın hedeflediğimiz sınav ve okul başarısını getireceğine inanıyorum. Desteğiniz için teşekkür ederim.
 
-✨ *${teacherName}*
-📐 *${brandName}* • ${instagram}`;
+${signature}`;
     }
 
     default:

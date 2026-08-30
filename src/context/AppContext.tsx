@@ -789,12 +789,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateTeacherProfile = (profile: Partial<TeacherProfile>) => {
     setTeacher((prev) => {
       const next = { ...prev, ...profile };
-      const instagram = next.instagramHandle || next.instagram || '';
+      const fixedBrand = 'bymatematik';
+      const fixedInstagram = '@bymatematiik';
       return {
         ...next,
-        instagram: instagram,
-        instagramHandle: instagram,
-        messageSignature: `Matematik Öğretmeni\n${next.firstName} ${next.lastName}`.trimEnd() + `\n${next.brandName || 'bymatematik'}${instagram ? `\n${instagram}` : ''}`,
+        brandName: fixedBrand,
+        instagram: fixedInstagram,
+        instagramHandle: fixedInstagram,
+        messageSignature: `Matematik Öğretmeni\n${next.firstName} ${next.lastName}`.trimEnd(),
       };
     });
   };

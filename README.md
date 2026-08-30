@@ -5,7 +5,7 @@
 ## Bu sürüm
 
 **Sürüm:** 1.0.0  
-**Durum:** Yerel/offline-first üretim adayı
+**Durum:** Supabase Auth + bulut senkronizasyonlu PWA üretim sürümü
 
 Bu paket gerçek çalışan istemci tarafı modüllerini içerir. Kullanıcı hesapları ve veriler tarayıcıda hesap bazlı olarak yerel saklanır. Gerçek e-posta doğrulama, şifre sıfırlama e-postası ve cihazlar arası bulut senkronizasyonu için ayrıca bir backend/Auth hizmeti (ör. Firebase, Supabase veya eşdeğeri) bağlanmalıdır.
 
@@ -55,7 +55,7 @@ Başarılı build sonrasında çıktı `dist/` klasöründe oluşur.
 
 ## Veri ve güvenlik notu
 
-Bu sürümde veriler tarayıcı `localStorage` alanında hesap kimliğine göre ayrılmış olarak tutulur. Parolalar düz metin tutulmaz; istemci tarafında SHA-256 özeti saklanır. Bu yapı kişisel kullanım ve offline-first çalışma için tasarlanmıştır ancak internet üzerinden çok kullanıcılı gerçek üretim ortamında tek başına güvenli kimlik doğrulama sistemi olarak değerlendirilmemelidir.
+Kimlik doğrulama Supabase Auth üzerinden yapılır. Uygulama verilerinin ana bulut kopyası kullanıcıya ait Supabase `app_state` kaydında tutulur ve RLS ile hesap bazında ayrılır. Tarayıcı `localStorage` alanı çevrimdışı/yerel önbellek olarak kullanılır; PIN yalnızca cihaz güvenliği için yereldir ve buluta gönderilmez.
 
 Gerçek üretim hesabı için sunucu taraflı kimlik doğrulama, e-posta doğrulama, şifre sıfırlama, erişim kuralları ve bulut veritabanı bağlanmalıdır.
 

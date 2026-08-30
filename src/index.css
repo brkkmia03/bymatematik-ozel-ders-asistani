@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
@@ -106,4 +107,33 @@ button, a { touch-action: manipulation; }
 
 @media (display-mode: standalone) {
   body { min-height: 100dvh; }
+}
+
+
+/* Tüm modal/pencere katmanlarında arka plan sabit, içerik bağımsız kayar. */
+.modal-overlay {
+  overflow: hidden !important;
+  overscroll-behavior: contain;
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+.modal-overlay > * {
+  max-height: calc(100dvh - max(1.5rem, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+@media (max-width: 640px) {
+  .modal-overlay {
+    align-items: flex-start !important;
+    padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+  }
+  .modal-overlay > * {
+    width: 100%;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    border-radius: 1.25rem;
+  }
 }

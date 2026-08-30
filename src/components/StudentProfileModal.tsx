@@ -173,7 +173,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
   );
 
   return (
-    <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
+    <div className="modal-overlay fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
       <div className="min-h-full sm:min-h-0 sm:max-w-6xl sm:mx-auto sm:my-4 bg-white dark:bg-slate-900 sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800">
           <div className="p-4 sm:p-6 flex items-start gap-3 sm:gap-4">
@@ -201,7 +201,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
             <button onClick={() => openForStudent('addAssignment')} className="px-3 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5"/>Ödev Ver</button>
             <button onClick={() => openForStudent('addPayment')} className="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center gap-1.5"><CreditCard className="w-3.5 h-3.5"/>Ödeme Gir</button>
             <button onClick={() => openModal('whatsapp', { student, templateType: 'lesson_report' })} className="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5"><MessageSquare className="w-3.5 h-3.5"/>WhatsApp</button>
-            <button onClick={() => openModal('pdfPreview', { reportType: 'student_progress', student })} className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5"><FileText className="w-3.5 h-3.5"/>PDF</button>
+            <button onClick={() => openModal('pdfPreview', { reportType: 'student_full_record', student })} className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5"><FileText className="w-3.5 h-3.5"/>PDF</button>
             <button
               disabled={!stats.nextLesson}
               onClick={() => stats.nextLesson && openModal('preLessonSummary', { lesson: stats.nextLesson, student })}

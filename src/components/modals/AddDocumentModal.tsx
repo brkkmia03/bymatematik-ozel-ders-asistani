@@ -33,8 +33,8 @@ export const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ onClose, ini
   const handleFile = (file?: File) => {
     setError('');
     if (!file) return;
-    if (file.size > 1_500_000) {
-      setError('Yerel sürümde dosya boyutu en fazla 1,5 MB olabilir. Daha büyük dosyalar için URL/Drive bağlantısı kullanın.');
+    if (file.size > 4 * 1024 * 1024) {
+      setError('Tek dosyada en fazla 4 MB yükleyebilirsiniz. Daha büyük dosyalar için URL/Drive bağlantısı kullanın.');
       return;
     }
     const reader = new FileReader();
@@ -80,7 +80,7 @@ export const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ onClose, ini
   const inputClass = 'w-full text-xs p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div className="modal-overlay fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full my-6 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center"><FolderArchive className="w-5 h-5" /></div><div><h3 className="text-lg font-black text-slate-900 dark:text-white">Doküman & Kaynak Ekle</h3><p className="text-xs text-slate-500">Dosya yükleyin veya çevrim içi kaynak bağlantısı ekleyin.</p></div></div>
@@ -105,7 +105,7 @@ export const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ onClose, ini
           ) : (
             <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-dashed border-slate-300 dark:border-slate-700">
               <label className="text-xs font-bold flex items-center gap-2 cursor-pointer"><Upload className="w-4 h-4"/> Dosya Seç<input type="file" className="hidden" onChange={e=>handleFile(e.target.files?.[0])}/></label>
-              <p className="text-[11px] text-slate-500 mt-1">{fileName ? `${fileName} • ${fileSize}` : 'Yerel sürümde 1,5 MB’a kadar dosya saklanır; büyük dosyalar için URL kullanın.'}</p>
+              <p className="text-[11px] text-slate-500 mt-1">{fileName ? `${fileName} • ${fileSize}` : 'Tek dosyada 4 MB’a kadar yükleme yapılabilir; büyük dosyalar için URL kullanın.'}</p>
             </div>
           )}
 

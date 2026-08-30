@@ -43,8 +43,8 @@ export const SettingsView: React.FC = () => {
   const [firstName, setFirstName] = useState(teacher.firstName);
   const [lastName, setLastName] = useState(teacher.lastName);
   const [title, setTitle] = useState(teacher.title);
-  const [brandName, setBrandName] = useState(teacher.brandName);
-  const [instagram, setInstagram] = useState(teacher.instagramHandle || teacher.instagram || '');
+  const brandName = 'bymatematik';
+  const instagram = '@bymatematiik';
   const [phone, setPhone] = useState(teacher.phone);
   const [email, setEmail] = useState(teacher.email);
   const [bankName, setBankName] = useState(teacher.bankName || '');
@@ -100,9 +100,9 @@ export const SettingsView: React.FC = () => {
       firstName,
       lastName,
       title,
-      brandName,
-      instagram,
-      instagramHandle: instagram.trim(),
+      brandName: 'bymatematik',
+      instagram: '@bymatematiik',
+      instagramHandle: '@bymatematiik',
       phone,
       email,
       bankName,
@@ -220,9 +220,11 @@ export const SettingsView: React.FC = () => {
               <input
                 type="text"
                 value={brandName}
-                onChange={(e) => setBrandName(e.target.value)}
-                className="w-full text-xs p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none font-bold text-indigo-600"
+                readOnly
+                aria-readonly="true"
+                className="w-full text-xs p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-indigo-600 cursor-not-allowed"
               />
+              <p className="text-[10px] text-slate-400 mt-1">Uygulama markası sabittir.</p>
             </div>
 
             <div className="space-y-1">
@@ -232,9 +234,11 @@ export const SettingsView: React.FC = () => {
               <input
                 type="text"
                 value={instagram}
-                onChange={(e) => setInstagram(e.target.value)}
-                className="w-full text-xs p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none font-bold"
+                readOnly
+                aria-readonly="true"
+                className="w-full text-xs p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold cursor-not-allowed"
               />
+              <p className="text-[10px] text-slate-400 mt-1">Resmî Instagram hesabı sabittir.</p>
             </div>
 
             <div className="space-y-1">
@@ -398,7 +402,7 @@ export const SettingsView: React.FC = () => {
           <h2 className="text-sm font-bold text-slate-900 dark:text-white font-display flex items-center gap-2"><Database className="w-4 h-4 text-indigo-600"/><span>Veri Katmanı & Hesap İzolasyonu</span></h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900"><div className="text-xs font-black text-emerald-700 dark:text-emerald-300">Hesaba Özel Yerel Veri</div><div className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80 mt-1">Her kullanıcı ayrı veri alanında tutulur. Farklı hesapların öğrenci ve finans kayıtları birbirine karışmaz.</div></div>
-            <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900"><div className="text-xs font-black text-blue-700 dark:text-blue-300 flex items-center gap-1.5"><Cloud className="w-3.5 h-3.5"/>Bulut Bağlantısına Hazır</div><div className="text-[11px] text-blue-700/80 dark:text-blue-300/80 mt-1">Şu an offline-first çalışır. Veri erişimi ayrıştırıldığı için sonraki aşamada gerçek bulut sağlayıcısına taşınabilir.</div></div>
+            <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900"><div className="text-xs font-black text-blue-700 dark:text-blue-300 flex items-center gap-1.5"><Cloud className="w-3.5 h-3.5"/>Supabase Bulut Senkronizasyonu Aktif</div><div className="text-[11px] text-blue-700/80 dark:text-blue-300/80 mt-1">Hesap verileri Supabase ile senkronize edilir; cihazdaki yerel önbellek bağlantı kesintilerinde yardımcı kopya olarak kullanılır.</div></div>
           </div>
         </div>
 

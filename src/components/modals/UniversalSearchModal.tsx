@@ -95,7 +95,7 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
     matchedExams.length > 0 || matchedDocuments.length > 0 || matchedTasks.length > 0 || matchedTransactions.length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center pt-16 sm:pt-24 p-4 animate-in fade-in">
+    <div className="modal-overlay fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center pt-16 sm:pt-24 p-4 animate-in fade-in">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
         {/* Search Input */}
         <div className="relative">

@@ -56,6 +56,30 @@ const AppLayout: React.FC = () => {
   } = useApp();
   const [activeView, setActiveView] = useState('home');
 
+  // Modal açıkken arka sayfanın kaymasını engelle; kaydırma modal panelinin içinde kalır.
+  useEffect(() => {
+    if (!activeModal) return;
+    const body = document.body;
+    const scrollY = window.scrollY;
+    const previous = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+    };
+    body.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.width = '100%';
+    return () => {
+      body.style.overflow = previous.overflow;
+      body.style.position = previous.position;
+      body.style.top = previous.top;
+      body.style.width = previous.width;
+      window.scrollTo(0, scrollY);
+    };
+  }, [activeModal]);
+
   // Keyboard shortcut for Ctrl+K search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

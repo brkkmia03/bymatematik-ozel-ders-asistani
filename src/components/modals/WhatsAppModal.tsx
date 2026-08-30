@@ -78,18 +78,20 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     } else if (activeTemplate === 'payment') {
       const balance = calculateStudentBalance(activeStudent.id, transactions).balance;
       const parentName = activeStudent.parentName ? `Sayın ${activeStudent.parentName}` : 'Sayın Velimiz';
-      const signature = teacher.messageSignature || `Matematik Öğretmeni\n${teacher.firstName} ${teacher.lastName}\n${teacher.brandName}`;
+      const signature = `Matematik Öğretmeni\n${teacher.firstName} ${teacher.lastName}`.trimEnd();
       const packageText = activePackage ? `\nKalan paket hakkı: ${activePackage.remainingLessons} ders.` : '';
       const balanceText = balance > 0 ? `\nBekleyen bakiye: ${formatCurrency(balance, teacher.currency)}.` : '\nBekleyen ödeme görünmüyor.';
       setMessageText(`${parentName},\n\n${activeStudent.firstName} ${activeStudent.lastName} için özel ders ödeme bilgilendirmesidir.${packageText}${balanceText}\n\nİyi günler dilerim.\n${signature}`);
     } else if (activeTemplate === 'exam') {
       if (!exam) {
-        setMessageText(`Sayın ${activeStudent.parentName || 'Velimiz'},\n\n${activeStudent.firstName} ${activeStudent.lastName} için henüz bu mesaja bağlanmış bir sınav sonucu bulunmuyor. Mesajı göndermeden önce ilgili sınav sonucunu seçebilirsiniz.\n\n${teacher.messageSignature || `${teacher.firstName} ${teacher.lastName}\n${teacher.brandName}`}`);
+        setMessageText(`Sayın ${activeStudent.parentName || 'Velimiz'},\n\n${activeStudent.firstName} ${activeStudent.lastName} için henüz bu mesaja bağlanmış bir sınav sonucu bulunmuyor. Mesajı göndermeden önce ilgili sınav sonucunu seçebilirsiniz.\n\n${`Matematik Öğretmeni\n${teacher.firstName} ${teacher.lastName}`.trimEnd()}`);
       } else {
-        setMessageText(`Sayın ${activeStudent.parentName || 'Velimiz'},\n\n${activeStudent.firstName} ${activeStudent.lastName} öğrencimizin ${exam.examName} sonucu:\n\n📅 Tarih: ${formatDateTurkish(exam.date, 'full')}\n✅ Doğru: ${exam.correctCount}\n❌ Yanlış: ${exam.wrongCount}\n⚪ Boş: ${exam.emptyCount}\n🎯 Net: ${exam.netScore}${exam.totalScore !== undefined ? `\n📊 Puan: ${exam.totalScore}` : ''}\n\nBir sonraki ders planını bu sonuçlara göre güncelleyeceğiz.\n\n${teacher.messageSignature || `${teacher.firstName} ${teacher.lastName}\n${teacher.brandName}`}`);
+        setMessageText(`Sayın ${activeStudent.parentName || 'Velimiz'},\n\n${activeStudent.firstName} ${activeStudent.lastName} öğrencimizin ${exam.examName} sonucu:\n\n📅 Tarih: ${formatDateTurkish(exam.date, 'full')}\n✅ Doğru: ${exam.correctCount}\n❌ Yanlış: ${exam.wrongCount}\n⚪ Boş: ${exam.emptyCount}\n🎯 Net: ${exam.netScore}${exam.totalScore !== undefined ? `\n📊 Puan: ${exam.totalScore}` : ''}\n\nBir sonraki ders planını bu sonuçlara göre güncelleyeceğiz.\n\n${`Matematik Öğretmeni\n${teacher.firstName} ${teacher.lastName}`.trimEnd()}`);
       }
+    } else if (activeTemplate === 'custom') {
+      setMessageText(`Sayın ${activeStudent.parentName || 'Velimiz'},\n\n\n\nMatematik Öğretmeni\n${teacher.firstName} ${teacher.lastName}`.trimEnd());
     } else {
-      setMessageText(`Sayın ${activeStudent.parentName || 'Velimiz'},\n\n${activeStudent.firstName} ${activeStudent.lastName} öğrencimizin ders süreciyle ilgili bilgilendirme mesajıdır.\n\n${teacher.messageSignature || `${teacher.firstName} ${teacher.lastName}\n${teacher.brandName}`}`);
+      setMessageText(`Sayın ${activeStudent.parentName || 'Velimiz'},\n\n${activeStudent.firstName} ${activeStudent.lastName} öğrencimizin ders süreciyle ilgili bilgilendirme mesajıdır.\n\nMatematik Öğretmeni\n${teacher.firstName} ${teacher.lastName}`.trimEnd());
     }
   }, [activeStudent, activeTemplate, lesson, assignment, exam, teacher, activeLessonNote, assignments, packages, transactions]);
 
@@ -120,7 +122,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+    <div className="modal-overlay fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
@@ -206,7 +208,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
               { id: 'assignment', label: '📚 Ödev Hatırlatma' },
               { id: 'exam', label: '🎯 Deneme Sonucu' },
               { id: 'payment', label: '💳 Ödeme / Paket' },
-              { id: 'custom', label: '✍️ Özel Mesaj' },
+              { id: 'custom', label: '✍️ Özgün Mesaj Yaz' },
             ].map((tmpl) => (
               <button
                 key={tmpl.id}
@@ -237,7 +239,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Gönderilecek Mesaj Metni (Düzenleyebilirsiniz)
+              {activeTemplate === 'custom' ? 'Özgün Mesajınız' : 'Gönderilecek Mesaj Metni (Düzenleyebilirsiniz)'}
             </label>
             <span className="text-[10px] text-slate-400 font-mono">
               {messageText.length} karakter

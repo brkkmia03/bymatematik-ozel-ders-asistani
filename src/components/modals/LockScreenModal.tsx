@@ -29,7 +29,7 @@ export const LockScreenModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="modal-overlay fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
       <div className="max-w-sm w-full bg-slate-900 rounded-3xl p-8 border border-slate-800 text-center space-y-6 shadow-2xl animate-in zoom-in-95">
         {/* Brand & Lock Icon */}
         <div className="space-y-2">

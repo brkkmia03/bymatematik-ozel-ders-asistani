@@ -54,6 +54,7 @@ export const ReportsView: React.FC = () => {
   };
 
   const reportTypes = [
+    { id: 'student_full_record', title: 'Öğrenci Tam Dosya Raporu', desc: 'Öğrenci bilgileri, tüm dersler, ödevler, sınavlar, konu ilerlemesi, dokümanlar ve finans kayıtlarını tek PDF dosyasında toplar.', icon: FileText, color: 'bg-slate-800', studentSpecific: true, audienceAware: false },
     { id: 'student_progress', title: 'Öğrenci Gelişim Raporu', desc: 'Öğretmen veya veli/öğrenci için ayrı içerik üreten gelişim raporu.', icon: Award, color: 'bg-indigo-600', studentSpecific: true, audienceAware: true },
     { id: 'lesson_history', title: 'Ders Geçmişi', desc: 'Tarih, saat, konu, süre ve ders durumlarının ayrıntılı dökümü.', icon: ClipboardList, color: 'bg-violet-600', studentSpecific: true },
     { id: 'weekly_schedule', title: 'Haftalık Ders Programı', desc: 'Önümüzdeki 7 günlük ders çizelgesini yazdırmaya hazırlar.', icon: Calendar, color: 'bg-blue-600', studentSpecific: false },

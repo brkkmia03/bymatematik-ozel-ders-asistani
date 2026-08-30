@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bymatematik-shell-v1';
+const CACHE_NAME = 'bymatematik-shell-v2';
 const APP_SHELL = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {

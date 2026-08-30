@@ -9,6 +9,10 @@ import {
   LessonPackage,
   StudentTopicProgress,
   AcademicGoal,
+  LessonNote,
+  WrittenExamPreparation,
+  MaterialTask,
+  DocumentItem,
 } from '../types';
 import { formatCurrency, formatDateTurkish, calculateStudentBalance } from './formatters';
 
@@ -47,6 +51,11 @@ export function generateHTMLReportContent(
     packages?: LessonPackage[];
     curriculumProgress?: StudentTopicProgress[];
     goals?: AcademicGoal[];
+    lessonNotes?: LessonNote[];
+    writtenPreparations?: WrittenExamPreparation[];
+    tasks?: MaterialTask[];
+    documents?: DocumentItem[];
+    whatsAppLogs?: Array<{ studentId: string; recipientPhone: string; recipientType?: 'parent' | 'student'; templateType: string; messageText: string; sentAt: string; status?: string }>;
     reportOptions?: { dateFrom?: string; dateTo?: string; reportAudience?: 'teacher' | 'family' };
   }
 ): string {
@@ -62,6 +71,11 @@ export function generateHTMLReportContent(
     packages = [],
     curriculumProgress = [],
     goals = [],
+    lessonNotes = [],
+    writtenPreparations = [],
+    tasks = [],
+    documents = [],
+    whatsAppLogs = [],
     reportOptions = {},
   } = data;
 
@@ -87,7 +101,81 @@ export function generateHTMLReportContent(
   let title = 'Rapor';
   let body = '';
 
-  if (reportType === 'student_progress') {
+  if (reportType === 'student_full_record') {
+    title = student ? `${student.firstName} ${student.lastName} - Öğrenci Tam Dosyası` : 'Öğrenci Tam Dosyası';
+    if (!student) {
+      body = '<p class="empty">Bu rapor için öğrenci seçilmelidir.</p>';
+    } else {
+      const allLessons = lessons.filter((l) => l.studentId === student.id).sort((a,b)=>`${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`));
+      const allAssignments = assignments.filter((a) => a.studentId === student.id).sort((a,b)=>b.assignedDate.localeCompare(a.assignedDate));
+      const allExams = exams.filter((e) => e.studentId === student.id).sort((a,b)=>b.date.localeCompare(a.date));
+      const allWritten = writtenExams.filter((w) => w.studentId === student.id).sort((a,b)=>b.date.localeCompare(a.date));
+      const allProgress = curriculumProgress.filter((p) => p.studentId === student.id).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+      const allGoals = goals.filter((g) => g.studentId === student.id).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+      const allPackages = packages.filter((pkg) => pkg.studentId === student.id).sort((a,b)=>b.startDate.localeCompare(a.startDate));
+      const allTxns = transactions.filter((t) => t.studentId === student.id).sort((a,b)=>b.date.localeCompare(a.date));
+      const allNotes = lessonNotes.filter((n) => n.studentId === student.id).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+      const allPreps = writtenPreparations.filter((prep) => prep.studentId === student.id).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+      const allTasks = tasks.filter((task) => task.studentId === student.id).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+      const allDocs = documents.filter((doc) => doc.studentIds.includes(student.id)).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+      const allWa = whatsAppLogs.filter((log) => log.studentId === student.id).sort((a,b)=>b.sentAt.localeCompare(a.sentAt));
+      const completedLessons = allLessons.filter((l) => l.status === 'Tamamlandı');
+      const completedAssignments = allAssignments.filter((a) => a.status === 'Tamamlandı' || a.status === 'Kontrol Edildi');
+      const totalMinutes = completedLessons.reduce((sum,l)=>sum+(l.actualDuration || l.duration || 0),0);
+      const balance = calculateStudentBalance(student.id, transactions).balance;
+      body = `
+        <p class="confidential">Öğrenci Tam Dosyası öğretmen kullanımına yönelik kapsamlı arşiv çıktısıdır. Öğretmen özel notları ve finans kayıtları içerebilir.</p>
+        <h2>Öğrenci Bilgileri</h2>
+        ${table(['Alan','Bilgi'], [
+          ['Ad Soyad', esc(`${student.firstName} ${student.lastName}`)],
+          ['Sınıf / Eğitim', esc(`${student.gradeLevel} • ${student.educationType}`)],
+          ['Hedef Sınav', esc(student.targetExam || '-')],
+          ['Okul', esc(student.schoolName || '-')],
+          ['Akademik Hedef', esc(student.academicGoal || '-')],
+          ['Öğrenci Telefonu', esc(student.studentPhone || '-')],
+          ['Veli', esc(`${student.parentName || '-'}${student.parentRelationship ? ` (${student.parentRelationship})` : ''}`)],
+          ['Veli Telefonu', esc(student.parentPhone || '-')],
+          ['Ders Türü', esc(student.lessonType)],
+          ['Ücret Modeli', esc(`${student.feeType} • ${formatCurrency(student.lessonFee, teacher.currency)}`)],
+          ['Varsayılan Ders Süresi', `${esc(student.lessonDuration)} dk`],
+          ['Öğretmen Özel Notu', esc(student.teacherNotes || '-')],
+          ['Kayıt Tarihi', esc(formatDateTurkish(student.createdAt.slice(0,10),'short'))],
+        ])}
+        <div class="metrics">
+          <div class="metric"><span>Tamamlanan Ders</span><strong>${completedLessons.length}</strong><small>${(totalMinutes/60).toFixed(1)} saat</small></div>
+          <div class="metric"><span>Ödev Tamamlama</span><strong>%${allAssignments.length ? Math.round(completedAssignments.length/allAssignments.length*100) : 0}</strong><small>${completedAssignments.length}/${allAssignments.length}</small></div>
+          <div class="metric"><span>Sınav Kaydı</span><strong>${allExams.length}</strong><small>Deneme / sınav</small></div>
+          <div class="metric"><span>Güncel Bakiye</span><strong>${esc(formatCurrency(balance, teacher.currency))}</strong><small>Hesap hareketlerinden</small></div>
+        </div>
+        <h2>Akademik Hedefler</h2>
+        ${table(['Hedef','Tür','Hedef','Mevcut','Tarih','Durum','Not'], allGoals.map(g=>[esc(g.title),esc(g.goalType),esc(g.targetValue),esc(g.currentValue ?? '-'),esc(g.targetDate ? formatDateTurkish(g.targetDate,'short') : '-'),esc(g.status),esc(g.notes || '-')]))}
+        <h2>Konu & Kazanım İlerlemesi</h2>
+        ${table(['Konu','Durum','Başarı','Soru','İlk Anlatım','Son Tekrar','Not'], allProgress.map(p=>[esc(p.topicTitle),esc(p.status),`%${esc(p.masteryPercentage)}`,esc(p.totalQuestionsSolved),esc(p.firstTaughtDate ? formatDateTurkish(p.firstTaughtDate,'short') : '-'),esc(p.lastReviewedDate ? formatDateTurkish(p.lastReviewedDate,'short') : '-'),esc(p.notes || '-')]))}
+        <h2>Tüm Ders Geçmişi</h2>
+        ${table(['Tarih','Saat','Konu / Alt Konu','Süre','Tür','Ücret','Durum','Öğretmen Notu'], allLessons.map(l=>[esc(formatDateTurkish(l.date,'short')),esc(l.startTime),esc(`${l.topic || 'Matematik'}${l.subtopic ? ` • ${l.subtopic}` : ''}`),`${esc(l.actualDuration || l.duration)} dk`,esc(l.lessonType),esc(formatCurrency(l.fee,teacher.currency)),esc(l.status),esc(l.teacherNotes || l.notes || '-')]))}
+        <h2>Ders Sonu Değerlendirmeleri</h2>
+        ${table(['Konu','Kazanım','Kaynak','Soru','Katılım','Konu Hakimiyeti','Problem Çözme','Zorlanılan Alan','Öğretmen Notu','Sonraki Plan'], allNotes.map(n=>[esc(`${n.topic}${n.subtopic ? ` • ${n.subtopic}` : ''}`),esc(n.learningOutcome || '-'),esc(n.usedResources || '-'),esc(n.solvedQuestionsCount),esc(`${n.participationRating}/5`),esc(`${n.topicMasteryRating}/5`),esc(`${n.problemSolvingRating}/5`),esc(n.difficultAreas || '-'),esc(n.teacherNote || '-'),esc(n.nextLessonPlan || '-')]))}
+        <h2>Tüm Ödevler</h2>
+        ${table(['Veriliş','Teslim','Başlık / Konu','Kaynak','Sayfa / Sorular','Soru','Öncelik','Durum','Geri Bildirim'], allAssignments.map(a=>[esc(formatDateTurkish(a.assignedDate,'short')),esc(formatDateTurkish(a.dueDate,'short')),esc(`${a.title || a.topic}${a.title && a.topic ? ` • ${a.topic}` : ''}`),esc(a.resourceName || '-'),esc([a.pages,a.questionNumbers].filter(Boolean).join(' • ') || '-'),esc(a.questionCount ?? '-'),esc(a.priority),esc(a.status),esc(a.teacherFeedback || a.description || '-')]))}
+        <h2>Deneme / Sınav Sonuçları</h2>
+        ${table(['Tarih','Sınav','Tür','D/Y/B','Net','Puan','Hedef Net','Yanlış Konular','Not'], allExams.map(e=>[esc(formatDateTurkish(e.date,'short')),esc(e.examName),esc(e.examType),`${esc(e.correctCount)} / ${esc(e.wrongCount)} / ${esc(e.emptyCount)}`,esc(e.netScore),esc(e.totalScore ?? '-'),esc(e.targetNet ?? '-'),esc((e.incorrectTopics || []).join(', ') || '-'),esc(e.notes || '-')]))}
+        <h2>Yazılı Sınavları</h2>
+        ${table(['Tarih','Yazılı','Hedef','Alınan','Hazırlık','Konular','Öğretmen Notu'], allWritten.map(w=>[esc(formatDateTurkish(w.date,'short')),esc(w.examName),esc(w.targetGrade),esc(w.actualGrade ?? '-'),`%${esc(w.preparationPercentage)}`,esc(w.topics.join(', ') || '-'),esc(w.teacherNotes || '-')]))}
+        <h2>Yazılı Hazırlık Planları</h2>
+        ${table(['Plan','Durum','Hedef Tarih','Konular','Çalışmalar','Not'], allPreps.map(p=>[esc(p.planTitle),esc(p.status),esc(formatDateTurkish(p.targetDate,'short')),esc(p.topicsCovered.join(', ') || '-'),esc(p.plannedActivities.join(', ') || '-'),esc(p.teacherNotes || '-')]))}
+        <h2>Öğrenciye Bağlı Görevler</h2>
+        ${table(['Görev','Kategori','Son Tarih','Öncelik','Durum','Açıklama'], allTasks.map(t=>[esc(t.title),esc(t.category),esc(t.dueDate ? formatDateTurkish(t.dueDate,'short') : '-'),esc(t.priority),esc(t.status),esc(t.description || '-')]))}
+        <h2>Öğrenci Dokümanları</h2>
+        ${table(['Başlık','Tür','Konu','Dosya / URL','Etiketler','Eklenme'], allDocs.map(d=>[esc(d.title),esc(d.fileType),esc(d.topic || '-'),esc(d.fileName || d.url || '-'),esc(d.tags.join(', ') || '-'),esc(formatDateTurkish(d.createdAt.slice(0,10),'short'))]))}
+        <h2>Ders Paketleri</h2>
+        ${table(['Paket','Başlangıç','Bitiş','Toplam','Kullanılan','Kalan','Tutar','Durum','Not'], allPackages.map(pkg=>[esc(pkg.packageName),esc(formatDateTurkish(pkg.startDate,'short')),esc(pkg.endDate ? formatDateTurkish(pkg.endDate,'short') : '-'),esc(pkg.totalLessons),esc(pkg.usedLessons),esc(pkg.remainingLessons),esc(formatCurrency(pkg.totalAmount,teacher.currency)),esc(pkg.status),esc(pkg.notes || '-')]))}
+        <h2>Finans Hareketleri</h2>
+        ${table(['Tarih','İşlem','Açıklama','Ödeme Yöntemi','Tutar','Durum'], allTxns.map(t=>[esc(formatDateTurkish(t.date,'short')),esc(t.type),esc(t.description),esc(t.paymentMethod || '-'),esc(formatCurrency(t.amount,teacher.currency)),esc(t.isCancelled ? `İptal${t.cancellationReason ? ` • ${t.cancellationReason}` : ''}` : 'Aktif')]))}
+        <h2>WhatsApp İletişim Geçmişi</h2>
+        ${table(['Tarih','Alıcı','Şablon','Durum','Mesaj'], allWa.map(w=>[esc(formatDateTurkish(w.sentAt.slice(0,10),'short')),esc(w.recipientType === 'student' ? 'Öğrenci' : 'Veli'),esc(w.templateType),esc(w.status || 'Açıldı'),esc(w.messageText)]))}
+      `;
+    }
+  } else if (reportType === 'student_progress') {
     const audienceLabel = reportAudience === 'teacher' ? 'Öğretmen Raporu' : 'Veli / Öğrenci Raporu';
     title = student ? `${student.firstName} ${student.lastName} - ${audienceLabel}` : audienceLabel;
     const completedLessons = sLessons.filter((l) => l.status === 'Tamamlandı');
@@ -173,7 +261,7 @@ export function generateHTMLReportContent(
 <style>
   *{box-sizing:border-box} body{margin:0;background:#fff;color:#172033;font-family:Arial,"Helvetica Neue",sans-serif;font-size:12px;line-height:1.45;padding:28px} .page{max-width:980px;margin:0 auto}.header{display:flex;justify-content:space-between;gap:24px;border-bottom:3px solid #4f46e5;padding-bottom:16px;margin-bottom:20px}.brand{font-size:24px;font-weight:800;color:#312e81}.subtitle,.muted{color:#64748b}.report-title{text-align:right;font-size:16px;font-weight:800;color:#1e293b}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 20px}.metric{border:1px solid #e2e8f0;border-radius:12px;padding:12px;background:#f8fafc}.metric span{display:block;color:#64748b;font-size:10px;font-weight:700;text-transform:uppercase}.metric strong{display:block;font-size:18px;margin-top:3px}.metric small{color:#64748b}h2{font-size:13px;margin:22px 0 8px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;text-transform:uppercase;letter-spacing:.03em}table{width:100%;border-collapse:collapse;font-size:10.5px}th{background:#f1f5f9;text-align:left;padding:8px;border-bottom:1px solid #cbd5e1}td{padding:7px 8px;border-bottom:1px solid #e2e8f0;vertical-align:top}.empty{text-align:center;color:#94a3b8;padding:20px}.footer{margin-top:28px;padding-top:10px;border-top:1px solid #e2e8f0;color:#64748b;display:flex;justify-content:space-between;gap:16px}.nowrap{white-space:nowrap}.confidential{margin-top:12px;padding:10px 12px;border:1px solid #f59e0b;background:#fffbeb;border-radius:10px;color:#92400e;font-weight:700}ul{padding-left:18px}li{margin:5px 0}@page{size:A4;margin:12mm}@media print{body{padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.page{max-width:none}.metrics{break-inside:avoid}tr{break-inside:avoid}}@media(max-width:700px){body{padding:14px}.header{flex-direction:column}.report-title{text-align:left}.metrics{grid-template-columns:repeat(2,1fr)}}
 </style></head><body><div class="page">
-  <div class="header"><div><div class="brand">bymatematik</div><div class="subtitle">Özel Ders Yönetim ve Öğretmen Asistanı</div><div style="margin-top:8px"><strong>Öğretmen:</strong> ${esc(teacherName)}${teacher.title ? ` • ${esc(teacher.title)}` : ''}</div></div><div class="report-title">${esc(title)}<div class="muted" style="font-size:11px;font-weight:500;margin-top:4px">Oluşturulma: ${esc(formatDateTurkish(todayStr,'full'))}</div><div class="muted" style="font-size:11px;font-weight:500;margin-top:2px">Dönem: ${esc(rangeLabel)}</div><div class="muted" style="font-size:11px;font-weight:500;margin-top:2px">Instagram: ${esc(instagram)}</div></div></div>
+  <div class="header"><div><div class="brand">bymatematik</div><div class="subtitle">Özel Ders Yönetim ve Öğretmen Asistanı</div><div style="margin-top:8px"><strong>Öğretmen:</strong> ${esc(teacherName)}${teacher.title ? ` • ${esc(teacher.title)}` : ''}</div></div><div class="report-title">${esc(title)}<div class="muted" style="font-size:11px;font-weight:500;margin-top:4px">Oluşturulma: ${esc(formatDateTurkish(todayStr,'full'))}</div><div class="muted" style="font-size:11px;font-weight:500;margin-top:2px">Dönem: ${esc(rangeLabel)}</div></div></div>
   ${body}
   <div class="footer"><span><strong>bymatematik</strong> • Özel Ders Asistanı</span><span>Instagram: <strong>${esc(instagram)}</strong></span></div>
 </div></body></html>`;

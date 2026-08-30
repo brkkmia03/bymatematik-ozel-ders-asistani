@@ -14,6 +14,8 @@ import {
   AlertTriangle,
   Filter,
   Layers,
+  Ban,
+  Trash2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatDateTurkish, formatCurrency } from '../utils/formatters';
@@ -27,11 +29,24 @@ const toLocalDateKey = (date: Date) => {
 };
 
 export const CalendarView: React.FC = () => {
-  const { students, lessons, openModal, startLiveLesson, updateLesson } = useApp();
+  const { students, lessons, openModal, startLiveLesson, updateLesson, cancelLesson, deleteLesson } = useApp();
 
   const [viewMode, setViewMode] = useState<'weekly' | 'daily' | 'monthly' | 'list'>('weekly');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedStudentFilter, setSelectedStudentFilter] = useState<string>('all');
+
+  const handleCancelLesson = (lesson: Lesson) => {
+    if (['İptal Edildi', 'Öğretmen İptal Etti'].includes(lesson.status)) return;
+    const reason = window.prompt('Ders iptal nedeni (isteğe bağlı):', '') ?? null;
+    if (reason === null) return;
+    if (!window.confirm(`${lesson.date} ${lesson.startTime} dersini iptal etmek istiyor musunuz?`)) return;
+    cancelLesson(lesson.id, reason.trim(), true);
+  };
+
+  const handleDeleteLesson = (lesson: Lesson) => {
+    if (!window.confirm(`${lesson.date} ${lesson.startTime} dersini kalıcı olarak silmek istiyor musunuz?\n\nBu işlem geri alınamaz.`)) return;
+    deleteLesson(lesson.id);
+  };
 
   // Navigation handlers
   const handlePrev = () => {
@@ -322,6 +337,14 @@ export const CalendarView: React.FC = () => {
                                 <Play className="w-3.5 h-3.5" />
                               </button>
                             )}
+                            {!isCompleted && !['İptal Edildi', 'Öğretmen İptal Etti'].includes(lesson.status) && (
+                              <button onClick={() => handleCancelLesson(lesson)} className="p-1 text-amber-600 hover:text-amber-700" title="Dersi İptal Et">
+                                <Ban className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button onClick={() => handleDeleteLesson(lesson)} className="p-1 text-rose-600 hover:text-rose-700" title="Dersi Sil">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
                       );
@@ -406,7 +429,15 @@ export const CalendarView: React.FC = () => {
                     >
                       Ön Özet
                     </button>
-                    {lesson.status !== 'Tamamlandı' ? (
+                    {!['Tamamlandı', 'İptal Edildi', 'Öğretmen İptal Etti'].includes(lesson.status) && (
+                      <button onClick={() => handleCancelLesson(lesson)} className="px-3 py-1.5 rounded-xl border border-amber-200 text-amber-700 dark:border-amber-900 dark:text-amber-300 font-semibold">
+                        İptal Et
+                      </button>
+                    )}
+                    <button onClick={() => handleDeleteLesson(lesson)} className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-700 dark:border-rose-900 dark:text-rose-300 font-semibold">
+                      Sil
+                    </button>
+                    {!['Tamamlandı', 'İptal Edildi', 'Öğretmen İptal Etti'].includes(lesson.status) ? (
                       <button
                         onClick={() => {
                           startLiveLesson(lesson.id);
@@ -418,7 +449,7 @@ export const CalendarView: React.FC = () => {
                       </button>
                     ) : (
                       <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-xl font-bold">
-                        Tamamlandı
+                        {lesson.status}
                       </span>
                     )}
                   </div>

@@ -1006,6 +1006,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const cancelLesson = (id: string, reason: string = '', byTeacher: boolean = false) => {
+    localMutationGuardUntilRef.current = Date.now() + 5000;
     setLessons((prev) =>
       prev.map((l) =>
         l.id === id
@@ -1017,6 +1018,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           : l
       )
     );
+    if (activeLessonId === id) {
+      setActiveLessonId(null);
+      setActiveLessonStartTime(null);
+      setActiveLessonElapsedSeconds(0);
+      setIsLessonTimerRunning(false);
+    }
+    setNotifications((prev) => prev.filter((n) => n.relatedEntityId !== id));
+    pushToast({ type: 'success', title: 'Ders iptal edildi', message: 'Ders iptal edildi ve yaklaşan ders hatırlatmalarından çıkarıldı.' });
   };
 
   const rescheduleLesson = (
@@ -1229,7 +1238,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const deleteLesson = (id: string) => {
+    localMutationGuardUntilRef.current = Date.now() + 5000;
     setLessons((prev) => prev.filter((l) => l.id !== id));
+    setLessonNotes((prev) => prev.filter((n) => n.lessonId !== id));
+    setAssignments((prev) => prev.map((a) => a.lessonId === id ? { ...a, lessonId: undefined } : a));
+    setNotifications((prev) => prev.filter((n) => n.relatedEntityId !== id));
+    if (activeLessonId === id) {
+      setActiveLessonId(null);
+      setActiveLessonStartTime(null);
+      setActiveLessonElapsedSeconds(0);
+      setIsLessonTimerRunning(false);
+    }
+    pushToast({ type: 'success', title: 'Ders silindi', message: 'Ders takvimden kalıcı olarak kaldırıldı.' });
   };
 
   // Live Lesson Stopwatch

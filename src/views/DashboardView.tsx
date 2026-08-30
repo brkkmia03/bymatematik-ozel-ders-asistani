@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Calendar,
   Clock,
@@ -32,6 +32,7 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
+  const [lessonOverviewMode, setLessonOverviewMode] = useState<'today' | 'week' | 'month' | 'all'>('week');
   const {
     teacher,
     students,
@@ -74,6 +75,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     ? assignments.filter((a) => a.studentId === heroStudent.id)
     : [];
   const latestHeroAssignment = [...heroStudentAssignments].sort((a, b) => b.assignedDate.localeCompare(a.assignedDate))[0];
+
+  // Dashboard lesson overview (today / this week / this month / all)
+  const toDateKey = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  const weekStart = new Date(now);
+  const dayIndex = weekStart.getDay();
+  const mondayOffset = dayIndex === 0 ? -6 : 1 - dayIndex;
+  weekStart.setDate(weekStart.getDate() + mondayOffset);
+  weekStart.setHours(0, 0, 0, 0);
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  const lessonOverview = lessons
+    .filter((lesson) => {
+      if (lessonOverviewMode === 'all') return true;
+      if (lessonOverviewMode === 'today') return lesson.date === todayStr;
+      if (lessonOverviewMode === 'week') {
+        return lesson.date >= toDateKey(weekStart) && lesson.date <= toDateKey(weekEnd);
+      }
+      return lesson.date >= toDateKey(monthStart) && lesson.date <= toDateKey(monthEnd);
+    })
+    .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`));
+
+  const lessonOverviewCounts = {
+    planned: lessonOverview.filter((l) => ['Planlandı', 'Yaklaşıyor', 'Başladı'].includes(l.status)).length,
+    completed: lessonOverview.filter((l) => l.status === 'Tamamlandı').length,
+    cancelled: lessonOverview.filter((l) => ['İptal Edildi', 'Öğretmen İptal Etti'].includes(l.status)).length,
+  };
 
   // Pending unchecked assignments
   const pendingAssignments = assignments.filter(
@@ -147,6 +181,146 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </button>
         </div>
       </header>
+
+      {/* Derslerim: home-screen lesson overview */}
+      <section className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-900 dark:text-white font-display">Derslerim</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Ders programını günlük, haftalık, aylık veya tüm kayıtlar olarak görüntüle.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <div className="grid grid-cols-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl text-[11px] sm:text-xs font-bold">
+              {([
+                ['today', 'Bugün'],
+                ['week', 'Haftalık'],
+                ['month', 'Aylık'],
+                ['all', 'Tümü'],
+              ] as const).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setLessonOverviewMode(mode)}
+                  className={`px-2.5 sm:px-3 py-2 rounded-xl transition-all ${
+                    lessonOverviewMode === mode
+                      ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('calendar')}
+              className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-center gap-1.5"
+            >
+              Takvime Git <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2.5 mb-4">
+          <div className="rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 px-3 py-2.5">
+            <div className="text-[10px] uppercase tracking-wider font-bold text-indigo-500">Planlı</div>
+            <div className="text-xl font-black text-indigo-700 dark:text-indigo-300">{lessonOverviewCounts.planned}</div>
+          </div>
+          <div className="rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50 px-3 py-2.5">
+            <div className="text-[10px] uppercase tracking-wider font-bold text-emerald-500">Tamamlandı</div>
+            <div className="text-xl font-black text-emerald-700 dark:text-emerald-300">{lessonOverviewCounts.completed}</div>
+          </div>
+          <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-800 px-3 py-2.5">
+            <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400">İptal</div>
+            <div className="text-xl font-black text-slate-700 dark:text-slate-300">{lessonOverviewCounts.cancelled}</div>
+          </div>
+        </div>
+
+        {lessonOverview.length === 0 ? (
+          <div className="py-8 text-center rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700">
+            <Calendar className="w-7 h-7 mx-auto text-slate-300 mb-2" />
+            <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Bu aralıkta ders bulunmuyor.</p>
+            <button type="button" onClick={() => openModal('addLesson')} className="mt-3 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">+ Yeni ders ekle</button>
+          </div>
+        ) : (
+          <div className="max-h-[430px] overflow-y-auto pr-1 space-y-2.5">
+            {lessonOverview.map((lesson) => {
+              const student = students.find((s) => s.id === lesson.studentId);
+              const isCancelled = ['İptal Edildi', 'Öğretmen İptal Etti'].includes(lesson.status);
+              const isCompleted = lesson.status === 'Tamamlandı';
+              const isLive = activeLessonId === lesson.id;
+
+              return (
+                <div
+                  key={lesson.id}
+                  className={`grid grid-cols-[64px_1fr_auto] sm:grid-cols-[92px_1fr_auto] gap-3 items-center p-3 rounded-2xl border ${
+                    isLive
+                      ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-800'
+                      : isCompleted
+                      ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/50'
+                      : isCancelled
+                      ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-75'
+                      : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800'
+                  }`}
+                >
+                  <div className="text-center sm:text-left">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase">
+                      {new Date(`${lesson.date}T12:00:00`).toLocaleDateString('tr-TR', { weekday: 'short' })}
+                    </div>
+                    <div className="text-xs font-black text-slate-700 dark:text-slate-200">
+                      {new Date(`${lesson.date}T12:00:00`).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' })}
+                    </div>
+                    <div className="text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400">{lesson.startTime}</div>
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                        {student ? `${student.firstName} ${student.lastName}` : 'Öğrenci'}
+                      </span>
+                      <span className="hidden sm:inline text-[10px] text-slate-400">• {lesson.duration} dk</span>
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                      {lesson.topic || 'Matematik Dersi'}
+                      {student?.gradeLevel ? ` • ${student.gradeLevel}` : ''}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5">
+                    <span className={`px-2 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold whitespace-nowrap ${
+                      isLive
+                        ? 'bg-indigo-600 text-white'
+                        : isCompleted
+                        ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300'
+                        : isCancelled
+                        ? 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                        : 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
+                    }`}>
+                      {isLive ? 'Devam Ediyor' : lesson.status}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('calendar')}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
+                      title="Takvimde Aç"
+                    >
+                      <ArrowUpRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Main Bento Grid Container */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">

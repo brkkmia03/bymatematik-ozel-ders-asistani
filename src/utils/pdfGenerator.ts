@@ -113,7 +113,7 @@ export function generateHTMLReportContent(
       const allProgress = curriculumProgress.filter((p) => p.studentId === student.id).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
       const allGoals = goals.filter((g) => g.studentId === student.id).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
       const allPackages = packages.filter((pkg) => pkg.studentId === student.id).sort((a,b)=>b.startDate.localeCompare(a.startDate));
-      const allTxns = transactions.filter((t) => t.studentId === student.id).sort((a,b)=>b.date.localeCompare(a.date));
+      const allTxns = transactions.filter((t) => t.studentId === student.id && !t.isCancelled).sort((a,b)=>b.date.localeCompare(a.date));
       const allNotes = lessonNotes.filter((n) => n.studentId === student.id).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
       const allPreps = writtenPreparations.filter((prep) => prep.studentId === student.id).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
       const allTasks = tasks.filter((task) => task.studentId === student.id).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
@@ -168,7 +168,7 @@ export function generateHTMLReportContent(
         <h2>Ders Paketleri</h2>
         ${table(['Paket','Başlangıç','Bitiş','Toplam','Kullanılan','Kalan','Tutar','Durum','Not'], allPackages.map(pkg=>[esc(pkg.packageName),esc(formatDateTurkish(pkg.startDate,'short')),esc(pkg.endDate ? formatDateTurkish(pkg.endDate,'short') : '-'),esc(pkg.totalLessons),esc(pkg.usedLessons),esc(pkg.remainingLessons),esc(formatCurrency(pkg.totalAmount,teacher.currency)),esc(pkg.status),esc(pkg.notes || '-')]))}
         <h2>Finans Hareketleri</h2>
-        ${table(['Tarih','İşlem','Açıklama','Ödeme Yöntemi','Tutar','Durum'], allTxns.map(t=>[esc(formatDateTurkish(t.date,'short')),esc(t.type),esc(t.description),esc(t.paymentMethod || '-'),esc(formatCurrency(t.amount,teacher.currency)),esc(t.isCancelled ? `İptal${t.cancellationReason ? ` • ${t.cancellationReason}` : ''}` : 'Aktif')]))}
+        ${table(['Tarih','İşlem','Açıklama','Ödeme Yöntemi','Tutar'], allTxns.map(t=>[esc(formatDateTurkish(t.date,'short')),esc(t.type),esc(t.description),esc(t.paymentMethod || '-'),esc(formatCurrency(t.amount,teacher.currency))]))}
         <h2>WhatsApp İletişim Geçmişi</h2>
         ${table(['Tarih','Alıcı','Şablon','Durum','Mesaj'], allWa.map(w=>[esc(formatDateTurkish(w.sentAt.slice(0,10),'short')),esc(w.recipientType === 'student' ? 'Öğrenci' : 'Veli'),esc(w.templateType),esc(w.status || 'Açıldı'),esc(w.messageText)]))}
       `;
@@ -210,7 +210,7 @@ export function generateHTMLReportContent(
       ${weakTopics.length ? `<h2>Öncelikli Çalışma Alanları</h2><p>${weakTopics.map((t,i)=>`${i+1}. ${esc(t)}`).join(' &nbsp; • &nbsp; ')}</p>` : ''}
       <h2>Önerilen Çalışma Planı</h2><ul>${recommendations.map((r)=>`<li>${esc(r)}</li>`).join('')}</ul>
       <h2>Ders Geçmişi</h2>
-      ${table(['Tarih','Saat','Konu','Süre','Durum'], [...completedLessons].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20).map(l => [esc(formatDateTurkish(l.date,'short')), esc(l.startTime), esc(l.topic || 'Matematik Dersi'), `${esc(l.actualDuration || l.duration)} dk`, esc(l.status)]))}
+      ${table(['Tarih','Saat','Konu','Süre','Durum'], [...sLessons].sort((a,b)=>`${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`)).slice(0,20).map(l => [esc(formatDateTurkish(l.date,'short')), esc(l.startTime), esc(l.topic || 'Matematik Dersi'), `${esc(l.actualDuration || l.duration)} dk`, esc(l.status)]))}
       <h2>Deneme / Sınav Sonuçları</h2>
       ${table(['Tarih','Sınav','Doğru','Yanlış','Boş','Net'], [...sExams].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10).map(e => [esc(formatDateTurkish(e.date,'short')), esc(e.examName), esc(e.correctCount), esc(e.wrongCount), esc(e.emptyCount), `<strong>${esc(e.netScore)}</strong>`]))}
       ${reportAudience === 'teacher' ? `<h2>Öğretmene Özel Değerlendirme</h2><p><strong>Öğrenci özel notu:</strong> ${esc(student?.teacherNotes || 'Özel not girilmemiş.')}</p>${table(['Tarih','Ders / Konu','Özel Not'], privateLessonNotes.map(l => [esc(formatDateTurkish(l.date,'short')), esc(l.topic || 'Matematik Dersi'), esc(l.teacherNotes || '-')]))}<p class="confidential">Bu bölüm yalnızca öğretmen kullanımı içindir; veli/öğrenci raporlarında gösterilmez.</p>` : ''}
@@ -242,11 +242,11 @@ export function generateHTMLReportContent(
     title = student ? `${student.firstName} ${student.lastName} - Yazılı Hazırlık Planı` : 'Yazılı Hazırlık Planı';
     body = `<h2>Yazılı Hazırlık Takibi</h2>${table(['Tarih','Öğrenci','Yazılı','Hedef','Alınan','Hazırlık','Konular'], [...sWritten].sort((a,b)=>a.date.localeCompare(b.date)).map(w => [esc(formatDateTurkish(w.date,'short')), esc(studentName(w.studentId, students)), esc(w.examName), esc(w.targetGrade), esc(w.actualGrade ?? 'Bekliyor'), `%${esc(w.preparationPercentage)}`, esc(w.topics.join(', '))]))}`;
   } else if (reportType === 'financial_summary' || reportType === 'account_statement') {
-    const filtered = reportType === 'financial_summary' && !dateFrom && !dateTo ? sTxns.filter(t => t.date.startsWith(thisMonth)) : sTxns;
+    const filtered = sTxns.filter(t => !t.isCancelled);
     title = reportType === 'financial_summary' ? 'Finans Özeti' : (student ? `${student.firstName} ${student.lastName} - Hesap Ekstresi` : 'Öğrenci Hesap Ekstresi');
-    const collected = filtered.filter(t => t.type === 'Ödeme Alındı' && !t.isCancelled).reduce((s,t)=>s+t.amount,0);
-    const earned = filtered.filter(t => (t.type === 'Ders Ücreti' || t.type === 'Paket Satışı') && !t.isCancelled).reduce((s,t)=>s+t.amount,0);
-    body = `<div class="metrics"><div class="metric"><span>Kazanılan</span><strong>${esc(formatCurrency(earned,teacher.currency))}</strong></div><div class="metric"><span>Tahsil Edilen</span><strong>${esc(formatCurrency(collected,teacher.currency))}</strong></div><div class="metric"><span>Bekleyen Ödeme</span><strong>${esc(formatCurrency(Math.max(0, earned-collected),teacher.currency))}</strong></div></div><h2>Hesap Hareketleri</h2>${table(['Tarih','Öğrenci','İşlem','Açıklama','Yöntem','Tutar'], [...filtered].filter(t=>!t.isCancelled).sort((a,b)=>b.date.localeCompare(a.date)).map(t => [esc(formatDateTurkish(t.date,'short')), esc(studentName(t.studentId, students)), esc(t.type), esc(t.description), esc(t.paymentMethod || '-'), `<strong>${esc(formatCurrency(t.amount,teacher.currency))}</strong>`]))}`;
+    const collected = filtered.filter(t => t.type === 'Ödeme Alındı' || t.type === 'İade/Düzeltme').reduce((s,t)=>s+t.amount,0);
+    const earned = filtered.filter(t => (t.type === 'Ders Ücreti' || t.type === 'Paket Satışı')).reduce((s,t)=>s+t.amount,0);
+    body = `<div class="metrics"><div class="metric"><span>Kazanılan</span><strong>${esc(formatCurrency(earned,teacher.currency))}</strong></div><div class="metric"><span>Alınan Ödeme</span><strong>${esc(formatCurrency(collected,teacher.currency))}</strong></div><div class="metric"><span>Bekleyen Ödeme</span><strong>${esc(formatCurrency(Math.max(0, earned-collected),teacher.currency))}</strong></div></div><h2>Hesap Hareketleri</h2>${table(['Tarih','Öğrenci','İşlem','Açıklama','Yöntem','Tutar'], [...filtered].sort((a,b)=>b.date.localeCompare(a.date)).map(t => [esc(formatDateTurkish(t.date,'short')), esc(studentName(t.studentId, students)), esc(t.type), esc(t.description), esc(t.paymentMethod || '-'), `<strong>${esc(formatCurrency(t.amount,teacher.currency))}</strong>`]))}`;
   } else {
     title = 'Genel Rapor';
     body = '<p class="empty">Seçilen rapor türü için içerik tanımlanmamış.</p>';

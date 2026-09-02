@@ -33,6 +33,7 @@ export const FinanceView: React.FC = () => {
 
   // Filter transactions
   const filteredTransactions = transactions.filter((t) => {
+    if (t.isCancelled) return false;
     if (studentFilter !== 'all' && t.studentId !== studentFilter) return false;
     return true;
   });
@@ -45,7 +46,7 @@ export const FinanceView: React.FC = () => {
 
   // Summary figures
   const totalRevenue = transactions
-    .filter((t) => t.type === 'Ödeme Alındı' && !t.isCancelled)
+    .filter((t) => (t.type === 'Ödeme Alındı' || t.type === 'İade/Düzeltme') && !t.isCancelled)
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalEarned = transactions
@@ -106,7 +107,7 @@ export const FinanceView: React.FC = () => {
 
           <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60">
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 block">
-              Toplam Tahsil Edilen Tutar
+              Toplam Alınan Ödeme
             </span>
             <div className="text-2xl font-black text-emerald-900 dark:text-emerald-100 font-display mt-1">
               {formatCurrency(totalRevenue, teacher.currency)}
@@ -165,7 +166,7 @@ export const FinanceView: React.FC = () => {
                   : 'text-slate-500'
               }`}
             >
-              Cari İşlemler & Tahsilatlar ({transactions.length})
+              Cari İşlemler & Tahsilatlar ({filteredTransactions.length})
             </button>
             <button
               onClick={() => setActiveTab('packages')}
@@ -207,9 +208,7 @@ export const FinanceView: React.FC = () => {
               return (
                 <div
                   key={tx.id}
-                  className={`py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition-colors ${
-                    tx.isCancelled ? 'opacity-40 line-through' : ''
-                  }`}
+                  className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div
@@ -248,7 +247,7 @@ export const FinanceView: React.FC = () => {
 
                     {!tx.isCancelled && (
                       <button
-                        onClick={() => { if (window.confirm('Bu finans kaydı iptal edilecek. Kayıt geçmişte korunacak. Devam etmek istiyor musunuz?')) cancelTransaction(tx.id, 'Kullanıcı tarafından iptal edildi'); }}
+                        onClick={() => { if (window.confirm(tx.type === 'Ödeme Alındı' ? 'Bu ödeme kaydı tamamen silinecek. Devam etmek istiyor musunuz?' : 'Bu finans kaydı iptal edilecek. Devam etmek istiyor musunuz?')) cancelTransaction(tx.id, 'Kullanıcı tarafından iptal edildi'); }}
                         className="text-[11px] font-bold text-slate-400 hover:text-rose-600 transition-colors"
                         title="İptal Et / Düzelt"
                       >

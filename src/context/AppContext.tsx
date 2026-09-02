@@ -267,9 +267,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [syncConflict, setSyncConflict] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'loading' | 'syncing' | 'synced' | 'offline' | 'error'>('idle');
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const lastSyncedAtRef = useRef<string | null>(null);
   const cloudSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cloudInitTokenRef = useRef(0);
   const lastCloudPayloadRef = useRef('');
+  const syncInFlightRef = useRef(false);
+  const syncQueuedRef = useRef(false);
   // Native confirm dialogs can fire focus/visibility events before React has flushed a local mutation.
   // Guard cloud refresh briefly so an older cloud snapshot cannot immediately restore a just-deleted student.
   const localMutationGuardUntilRef = useRef(0);
@@ -608,7 +611,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (row?.data && Object.keys(row.data).length > 0) {
         lastCloudPayloadRef.current = JSON.stringify(row.data);
         applyDatabasePayload(row.data, nextUser);
-        setLastSyncedAt(row.updated_at);
+        lastSyncedAtRef.current = row.updated_at;
+      setLastSyncedAt(row.updated_at);
       }
       setCloudReady(true);
       setSyncStatus(row ? 'synced' : 'idle');
@@ -639,6 +643,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setUser(null);
         setCloudReady(false);
         setSyncStatus('idle');
+        lastSyncedAtRef.current = null;
         setLastSyncedAt(null);
         lastCloudPayloadRef.current = '';
         setIsAppLocked(false);
@@ -756,7 +761,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const serialized = JSON.stringify(row.data);
         lastCloudPayloadRef.current = serialized;
         applyDatabasePayload(row.data, user);
-        setLastSyncedAt(row.updated_at);
+        lastSyncedAtRef.current = row.updated_at;
+      setLastSyncedAt(row.updated_at);
         setSyncConflict(false);
         setSyncStatus('synced');
         pushToast({
@@ -774,6 +780,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const serialized = JSON.stringify(payload);
       const row = await saveCloudState(user.id, payload, latest?.updated_at ?? null);
       lastCloudPayloadRef.current = serialized;
+      lastSyncedAtRef.current = row.updated_at;
       setLastSyncedAt(row.updated_at);
       setSyncConflict(false);
       setSyncStatus('synced');
@@ -1794,9 +1801,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const voidTransaction = (id: string, reason: string = 'Kayıt iptal edildi') => {
-    setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, isCancelled: true, cancellationReason: reason } : t))
-    );
+    setTransactions((prev) => {
+      const target = prev.find((t) => t.id === id);
+      // Yanlış girilen tahsilat kayıtları finans geçmişinde iz bırakmadan kaldırılır.
+      // Böylece iptal edilen ödeme; ekranda, toplamda ve PDF raporlarında görünmez.
+      if (target?.type === 'Ödeme Alındı') return prev.filter((t) => t.id !== id);
+      return prev.map((t) => (t.id === id ? { ...t, isCancelled: true, cancellationReason: reason } : t));
+    });
   };
 
   // Notifications
@@ -1874,25 +1885,62 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setSyncStatus('offline');
       return;
     }
+
+    // Focus/visibility ve otomatik kayıt aynı anda tetiklendiğinde aynı telefondan
+    // iki paralel CAS isteği gitmesini engelle. Bu durum sahte "çakışma" üretiyordu.
+    if (syncInFlightRef.current) {
+      syncQueuedRef.current = true;
+      return;
+    }
+
+    syncInFlightRef.current = true;
     const payload = getDatabasePayload();
     const serialized = JSON.stringify(payload);
     try {
       setSyncStatus('syncing');
-      const row = await saveCloudState(user.id, payload, lastSyncedAt);
+      const row = await saveCloudState(user.id, payload, lastSyncedAtRef.current);
       lastCloudPayloadRef.current = serialized;
+      lastSyncedAtRef.current = row.updated_at;
       setLastSyncedAt(row.updated_at);
       setSyncConflict(false);
       setSyncStatus('synced');
     } catch (error: any) {
       console.error('Bulut senkronizasyonu başarısız:', error?.message || error);
-      setSyncStatus('error');
       if (error instanceof CloudConflictError) {
+        // Önce buluttaki güncel satırı kontrol et. Aynı cihazın hemen önceki paralel
+        // kaydıysa kullanıcıya çakışma göstermeden zaman damgasını yenileyip tekrar dene.
+        try {
+          const latest = await loadCloudState<Record<string, any>>(user.id);
+          if (latest?.data) {
+            const latestSerialized = JSON.stringify(latest.data);
+            if (latestSerialized === serialized || latestSerialized === lastCloudPayloadRef.current) {
+              lastCloudPayloadRef.current = latestSerialized;
+              lastSyncedAtRef.current = latest.updated_at;
+              setLastSyncedAt(latest.updated_at);
+              setSyncConflict(false);
+              setSyncStatus('synced');
+              if (latestSerialized !== serialized) syncQueuedRef.current = true;
+              return;
+            }
+          }
+        } catch (refreshError: any) {
+          console.error('Çakışma doğrulaması başarısız:', refreshError?.message || refreshError);
+        }
+        setSyncStatus('error');
         setSyncConflict(true);
         pushToast({
           type: 'warning',
           title: 'Senkronizasyon çakışması',
-          message: 'Başka bir cihazda daha yeni veri var. Yerel değişiklikleriniz korunuyor; Ayarlar içinden hangi sürümün kullanılacağını seçebilirsiniz.',
+          message: 'Bulutta gerçekten farklı bir veri sürümü bulundu. Hangi sürümün kullanılacağını seçebilirsiniz.',
         });
+      } else {
+        setSyncStatus('error');
+      }
+    } finally {
+      syncInFlightRef.current = false;
+      if (syncQueuedRef.current) {
+        syncQueuedRef.current = false;
+        window.setTimeout(() => { void syncNow(); }, 50);
       }
     }
   };
@@ -1934,7 +1982,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           lastCloudPayloadRef.current = serialized;
           applyDatabasePayload(row.data, user);
         }
-        setLastSyncedAt(row.updated_at);
+        lastSyncedAtRef.current = row.updated_at;
+      setLastSyncedAt(row.updated_at);
         setSyncStatus('synced');
       } catch (error: any) {
         console.error('Bulut yenilemesi başarısız:', error?.message || error);
